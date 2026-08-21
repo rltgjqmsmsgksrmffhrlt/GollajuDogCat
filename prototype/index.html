@@ -1,0 +1,2898 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>골라주개냥 · 프로토타입</title>
+<style>
+/* ============================================================
+   골라주개냥 프로토타입 — 디자인 토큰
+   ============================================================ */
+:root{
+  --brand:#FF6A3D; --brand-deep:#DC4B1C; --brand-soft:#FFF0E9; --brand-line:#FFD6C4;
+  --teal:#0E7C7B; --teal-soft:#E4F3F2;
+  --ink:#1B1614; --ink2:#5C524E; --ink3:#938884; --ink4:#B8AEA9;
+  --line:#EEE7E2; --line2:#E2D9D3;
+  --bg:#FAF7F5; --surface:#FFFFFF; --surface2:#F6F2EF;
+  --good:#15803D; --good-soft:#E8F6EC; --good-line:#BCE5C7;
+  --warn:#B45309; --warn-soft:#FDF3E3; --warn-line:#F3D9A8;
+  --bad:#C0271F;  --bad-soft:#FDECEA;  --bad-line:#F5C9C4;
+  --r-s:10px; --r-m:14px; --r-l:20px; --r-xl:26px;
+  --sh-1:0 1px 2px rgba(50,25,12,.05), 0 1px 8px rgba(50,25,12,.04);
+  --sh-2:0 4px 16px -4px rgba(50,25,12,.12);
+  --sh-3:0 18px 40px -12px rgba(50,25,12,.28);
+  --font:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Noto Sans KR','Malgun Gothic',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font); color:var(--ink); background:var(--bg);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  font-size:15px; line-height:1.5;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,select,textarea{font:inherit;color:inherit}
+ul,ol{margin:0;padding:0;list-style:none}
+[hidden]{display:none!important}
+svg{width:18px;height:18px;flex:none}
+svg.big{width:28px;height:28px}
+h1,h2,h3,h4,p{margin:0}
+img{max-width:100%;display:block}
+
+/* ============================================================
+   무대 + 폰 프레임
+   ============================================================ */
+.stage{
+  min-height:100vh; display:grid; place-items:center; padding:26px 20px;
+  background:
+    radial-gradient(900px 500px at 50% -12%, #FFE3D5 0%, rgba(255,227,213,0) 62%),
+    radial-gradient(700px 500px at 92% 108%, #DCEFEE 0%, rgba(220,239,238,0) 58%),
+    var(--bg);
+}
+.phone{
+  position:relative; width:392px; height:min(846px, calc(100vh - 52px));
+  background:var(--surface); border-radius:42px; overflow:hidden;
+  display:flex; flex-direction:column;
+  box-shadow:0 0 0 11px #17110F, 0 0 0 12px #372B26, var(--sh-3);
+}
+/* iOS 하드웨어 디테일 */
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:104px;height:30px;
+  border-radius:99px;background:#17110F;z-index:12;pointer-events:none}
+.home-ind{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:136px;height:5px;
+  border-radius:99px;background:var(--ink);opacity:.26;z-index:30;pointer-events:none}
+@media (max-width:560px){
+  .stage{padding:0}
+  .phone{width:100%; height:100vh; height:100dvh; border-radius:0; box-shadow:none}
+  .island,.home-ind{display:none}
+}
+
+/* 상태바 */
+.statusbar{
+  flex:none; height:44px; padding:0 26px 0 30px; display:flex; align-items:center;
+  justify-content:space-between; font-size:13.5px; font-weight:600; letter-spacing:.2px;
+  background:var(--surface); color:var(--ink); z-index:5;
+}
+.statusbar svg{width:15px;height:12px}
+.statusbar .sb-r{display:flex;gap:5px;align-items:center;opacity:.85}
+.sb-bar{display:inline-flex;align-items:flex-end;gap:1.5px;height:10px}
+.sb-bar i{width:3px;background:currentColor;border-radius:1px}
+.sb-bat{width:22px;height:11px;border:1.4px solid currentColor;border-radius:3px;padding:1.4px;opacity:.9}
+.sb-bat i{display:block;height:100%;width:72%;background:currentColor;border-radius:1px}
+
+/* 앱바 */
+.appbar{
+  flex:none; min-height:52px; display:flex; align-items:center; gap:8px;
+  padding:6px 12px; background:var(--surface); border-bottom:1px solid transparent;
+  transition:border-color .18s ease; z-index:4;
+}
+.appbar.bordered{border-bottom-color:var(--line)}
+.appbar h1{font-size:17px;font-weight:700;letter-spacing:-.3px;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.appbar.center h1{text-align:center}
+.iconbtn{
+  width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  color:var(--ink);flex:none;transition:background .15s;
+}
+.iconbtn:hover{background:var(--surface2)}
+.iconbtn svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.iconbtn .dot{position:absolute;margin:-16px 0 0 15px;width:8px;height:8px;border-radius:50%;
+  background:var(--brand);border:2px solid var(--surface)}
+
+/* 스크린 */
+.screen{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;background:var(--bg)}
+.screen::-webkit-scrollbar{width:0}
+.pad{padding:16px}
+.pad-x{padding-left:16px;padding-right:16px}
+.gap-b{height:20px}
+.tabpad{padding-bottom:14px}
+
+/* 탭바 */
+.tabbar{
+  flex:none;display:grid;grid-template-columns:repeat(5,1fr);
+  background:var(--surface);border-top:1px solid var(--line);
+  padding:6px 4px calc(15px + env(safe-area-inset-bottom));
+}
+.tabbar button{display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:5px 0 3px;color:var(--ink4);font-size:10.5px;font-weight:600;letter-spacing:-.2px;
+  position:relative;transition:color .15s}
+.tabbar button.on{color:var(--brand)}
+.tabbar svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.85;
+  stroke-linecap:round;stroke-linejoin:round}
+.tabbar button.on svg{stroke-width:2.2}
+.tab-badge{position:absolute;top:1px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;
+  border-radius:9px;background:var(--brand);color:#fff;font-size:10px;font-weight:700;
+  display:grid;place-items:center;line-height:1}
+
+/* ============================================================
+   기본 컴포넌트
+   ============================================================ */
+.card{background:var(--surface);border-radius:var(--r-l);padding:16px;box-shadow:var(--sh-1)}
+.card.flat{box-shadow:none;border:1px solid var(--line)}
+.card+.card{margin-top:12px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:46px;padding:0 18px;border-radius:var(--r-m);font-size:15px;font-weight:700;
+  letter-spacing:-.2px;transition:transform .08s ease, filter .15s, background .15s;}
+.btn svg,.chip svg{width:16px;height:16px}
+.btn:active{transform:scale(.985)}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 6px 16px -6px rgba(255,106,61,.7)}
+.btn-primary:hover{filter:brightness(1.04)}
+.btn-dark{background:var(--ink);color:#fff}
+.btn-line{border:1.5px solid var(--line2);background:var(--surface);color:var(--ink)}
+.btn-soft{background:var(--brand-soft);color:var(--brand-deep)}
+.btn-ghost{color:var(--ink2)}
+.btn-block{display:flex;width:100%}
+.btn-sm{height:36px;padding:0 13px;font-size:13.5px;border-radius:10px}
+.btn:disabled{opacity:.42;pointer-events:none;box-shadow:none}
+
+.chip{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 13px;
+  border-radius:99px;border:1.4px solid var(--line2);background:var(--surface);
+  font-size:13.5px;font-weight:600;color:var(--ink2);white-space:nowrap;transition:.14s}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.brand.on{background:var(--brand);border-color:var(--brand)}
+.chip-row{display:flex;gap:7px;overflow-x:auto;padding:2px 16px;scrollbar-width:none}
+.chip-row::-webkit-scrollbar{display:none}
+.chip-wrap{display:flex;flex-wrap:wrap;gap:7px}
+
+.badge svg{width:12px;height:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:7px;
+  font-size:11.5px;font-weight:700;letter-spacing:-.2px;line-height:1.35;border:1px solid transparent}
+.badge-good{background:var(--good-soft);color:var(--good);border-color:var(--good-line)}
+.badge-warn{background:var(--warn-soft);color:var(--warn);border-color:var(--warn-line)}
+.badge-bad{background:var(--bad-soft);color:var(--bad);border-color:var(--bad-line)}
+.badge-info{background:var(--teal-soft);color:var(--teal);border-color:#BFE0DE}
+.badge-mute{background:var(--surface2);color:var(--ink2);border-color:var(--line)}
+.badge-brand{background:var(--brand-soft);color:var(--brand-deep);border-color:var(--brand-line)}
+
+.sec-title{font-size:17px;font-weight:800;letter-spacing:-.4px;margin-bottom:2px}
+.sec-sub{font-size:13px;color:var(--ink3);letter-spacing:-.2px}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:11px}
+.sec-more{font-size:13px;font-weight:600;color:var(--ink3);flex:none}
+.muted{color:var(--ink3)}
+.small{font-size:12.5px}
+.tiny{font-size:11.5px}
+.hr{height:1px;background:var(--line);margin:16px 0}
+.hr.thick{height:8px;background:var(--surface2);margin:0}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.strike{text-decoration:line-through;color:var(--ink4)}
+
+/* 폼 */
+.field{margin-bottom:16px}
+.label{display:block;font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:7px;letter-spacing:-.2px}
+.input{width:100%;height:50px;padding:0 14px;border-radius:var(--r-m);border:1.5px solid var(--line2);
+  background:var(--surface);font-size:15px;outline:none;transition:.15s}
+.input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+.input::placeholder{color:var(--ink4)}
+textarea.input{height:auto;padding:12px 14px;resize:none;line-height:1.55}
+.hint{font-size:12px;color:var(--ink3);margin-top:6px;letter-spacing:-.1px}
+.seg{display:grid;gap:8px;grid-auto-flow:column;grid-auto-columns:1fr}
+.opt{border:1.5px solid var(--line2);background:var(--surface);border-radius:var(--r-m);
+  padding:14px 12px;text-align:center;font-weight:700;font-size:14px;color:var(--ink2);transition:.15s}
+.opt .emo{display:block;font-size:26px;margin-bottom:5px;line-height:1}
+.opt.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-deep);
+  box-shadow:0 0 0 3px rgba(255,106,61,.11)}
+.stepper{display:flex;align-items:center;gap:4px;border:1.4px solid var(--line2);
+  border-radius:10px;padding:3px;background:var(--surface)}
+.stepper button{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;
+  font-size:17px;font-weight:700;color:var(--ink2)}
+.stepper button:hover{background:var(--surface2)}
+.stepper span{min-width:26px;text-align:center;font-weight:700;font-size:14px}
+
+/* 진행 바 */
+.progress{height:4px;background:var(--line);border-radius:99px;overflow:hidden;flex:1}
+.progress i{display:block;height:100%;background:var(--brand);border-radius:99px;
+  transition:width .3s cubic-bezier(.4,0,.2,1)}
+
+/* ============================================================
+   맞춤 점수 링
+   ============================================================ */
+.ring{position:relative;flex:none;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(var(--rc) calc(var(--v)*1%), var(--line) 0)}
+.ring::after{content:'';position:absolute;inset:6px;border-radius:50%;background:var(--surface)}
+.ring b{position:relative;z-index:1;font-size:20px;font-weight:800;letter-spacing:-.8px;color:var(--rc)}
+.ring i{position:relative;z-index:1;font-size:9.5px;font-weight:700;color:var(--ink4);
+  font-style:normal;margin-left:1px}
+.ring.lg{width:86px;height:86px}
+.ring.lg::after{inset:7px}
+.ring.lg b{font-size:26px}
+.ring.sm{width:44px;height:44px}
+.ring.sm::after{inset:4px}
+.ring.sm b{font-size:14px}
+.ring.sm i{display:none}
+
+/* 성분 게이지 */
+.nut{padding:11px 0;border-bottom:1px solid var(--line)}
+.nut:last-child{border-bottom:0}
+.nut-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+.nut-name{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:5px}
+.nut-val{font-size:13.5px;font-weight:800;letter-spacing:-.3px}
+.bar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.bar .mark{position:absolute;top:-2px;width:2px;height:11px;background:var(--ink3);border-radius:1px;opacity:.55}
+.bar-good i{background:var(--good)} .bar-warn i{background:var(--warn)}
+.bar-bad i{background:var(--bad)}   .bar-mute i{background:var(--ink4)}
+
+/* 툴팁 */
+.tip{position:relative;display:inline-grid;place-items:center;width:15px;height:15px;
+  border-radius:50%;background:var(--line);color:var(--ink2);font-size:10px;font-weight:800;
+  cursor:pointer;flex:none}
+.tip:hover{background:var(--ink3);color:#fff}
+
+/* ============================================================
+   상품 카드
+   ============================================================ */
+.thumb{background:var(--surface2);display:grid;place-items:center;font-size:40px;
+  border-radius:var(--r-m);flex:none;position:relative;overflow:hidden;line-height:1}
+.thumb::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(70% 70% at 50% 22%, rgba(255,255,255,.85), rgba(255,255,255,0) 70%)}
+.thumb>span{position:relative;z-index:1}
+
+.plist{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.plist:last-child{border-bottom:0}
+.plist .thumb{width:82px;height:82px;font-size:34px}
+.plist .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.pbrand{font-size:11.5px;font-weight:700;color:var(--ink3);letter-spacing:-.1px}
+.pname{font-size:14.5px;font-weight:700;letter-spacing:-.35px;line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pprice{font-size:16px;font-weight:800;letter-spacing:-.5px}
+.pprice em{font-style:normal;font-size:13.5px;font-weight:800;color:var(--brand);margin-right:5px}
+.prate{font-size:11.5px;color:var(--ink3);font-weight:600}
+
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.pcard{text-align:left;display:flex;flex-direction:column;gap:6px}
+.pgrid .thumb{width:100%;aspect-ratio:1;font-size:44px}
+.pcard-top{position:absolute;top:7px;left:7px;z-index:2}
+
+.hscroll{display:flex;gap:12px;overflow-x:auto;padding:2px 16px 4px;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll>*{flex:none}
+
+/* 추천 사유 */
+.why{background:var(--brand-soft);border:1px solid var(--brand-line);border-radius:10px;
+  padding:8px 10px;font-size:12px;font-weight:600;color:var(--brand-deep);letter-spacing:-.2px;
+  display:flex;gap:6px;align-items:flex-start;line-height:1.45}
+.why svg{width:14px;height:14px;flex:none;margin-top:1px;stroke:currentColor;fill:none;stroke-width:2.2;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* 요인 리스트 */
+.factor{display:flex;gap:8px;align-items:flex-start;padding:7px 0;font-size:13.5px;letter-spacing:-.2px;line-height:1.5}
+.factor .fi{width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;
+  margin-top:1px;font-size:11px;font-weight:800;color:#fff}
+.factor.plus .fi{background:var(--good)}
+.factor.minus .fi{background:var(--warn)}
+
+/* ============================================================
+   반려동물 아바타 / 스위처
+   ============================================================ */
+.pet-ava{width:42px;height:42px;border-radius:50%;background:var(--brand-soft);
+  display:grid;place-items:center;font-size:22px;flex:none;border:2px solid var(--brand-line);line-height:1}
+.pet-ava.lg{width:62px;height:62px;font-size:31px}
+.pet-ava.sm{width:30px;height:30px;font-size:15px;border-width:1.5px}
+.pet-ava.ghost{background:var(--surface2);border-color:var(--line2);color:var(--ink4);font-size:20px}
+
+.pethero{display:flex;gap:12px;align-items:center;padding:14px 16px;background:var(--surface);
+  border-radius:var(--r-l);box-shadow:var(--sh-1)}
+
+/* ============================================================
+   리뷰
+   ============================================================ */
+.rev{padding:15px 0;border-bottom:1px solid var(--line)}
+.rev:last-child{border-bottom:0}
+.rev-head{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px}
+.rev-meta{flex:1;min-width:0}
+.rev-pet{font-size:12.5px;font-weight:700;letter-spacing:-.2px}
+.rev-cond{font-size:11.5px;color:var(--ink3);margin-top:2px;letter-spacing:-.1px}
+.stars{color:var(--brand);font-size:12.5px;letter-spacing:1px;line-height:1}
+.rev-body{font-size:13.5px;line-height:1.62;letter-spacing:-.2px;color:var(--ink2)}
+.rev-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.trust{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+
+/* AI 요약 */
+.ai{background:linear-gradient(158deg,#FFF7F3 0%,#F1F8F8 100%);
+  border:1px solid #F2DED4;border-radius:var(--r-l);padding:15px}
+.ai-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;
+  color:var(--brand-deep);background:#fff;border:1px solid var(--brand-line);
+  padding:3px 8px;border-radius:99px;margin-bottom:11px;letter-spacing:-.1px}
+.ai-tag svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.statline{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:12.5px}
+.statline .sl-n{width:52px;flex:none;font-weight:700;color:var(--ink2)}
+.statline .bar{flex:1}
+.statline .sl-v{width:36px;text-align:right;font-weight:800;font-size:12px;flex:none}
+
+/* ============================================================
+   빈 상태 / 예외 케이스
+   ============================================================ */
+.empty{text-align:center;padding:44px 26px}
+.empty .emo{font-size:46px;line-height:1;margin-bottom:14px;display:block}
+.empty h3{font-size:16.5px;font-weight:800;letter-spacing:-.4px;margin-bottom:7px}
+.empty p{font-size:13.5px;color:var(--ink3);line-height:1.65;letter-spacing:-.2px}
+.empty .acts{margin-top:20px;display:flex;flex-direction:column;gap:8px}
+.notice{display:flex;gap:9px;align-items:flex-start;padding:12px 13px;border-radius:var(--r-m);
+  font-size:12.5px;line-height:1.55;letter-spacing:-.2px}
+.notice svg{width:16px;height:16px;flex:none;margin-top:1px;stroke:currentColor;fill:none;
+  stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.notice-info{background:var(--teal-soft);color:#0B5F5E}
+.notice-warn{background:var(--warn-soft);color:var(--warn)}
+.notice-brand{background:var(--brand-soft);color:var(--brand-deep)}
+
+/* ============================================================
+   바텀시트 / 토스트 / 모달
+   ============================================================ */
+.scrim{position:absolute;inset:0;background:rgba(27,22,20,.42);opacity:0;pointer-events:none;
+  transition:opacity .24s ease;z-index:20;backdrop-filter:blur(1px)}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;transform:translateY(102%);
+  transition:transform .3s cubic-bezier(.32,.72,0,1);z-index:21;max-height:86%;
+  display:flex;flex-direction:column;box-shadow:0 -8px 34px -10px rgba(50,25,12,.3)}
+.sheet.on{transform:translateY(0)}
+.sheet-grab{width:38px;height:4px;border-radius:99px;background:var(--line2);margin:10px auto 4px;flex:none}
+.sheet-head{padding:8px 18px 12px;flex:none}
+.sheet-head h3{font-size:17px;font-weight:800;letter-spacing:-.4px}
+.sheet-body{padding:0 18px;overflow-y:auto;flex:1;min-height:0}
+.sheet-foot{padding:12px 18px calc(16px + env(safe-area-inset-bottom));flex:none;
+  border-top:1px solid var(--line);display:flex;gap:8px}
+
+.toast{position:absolute;left:50%;bottom:88px;transform:translate(-50%,14px);z-index:40;
+  background:rgba(27,22,20,.94);color:#fff;padding:11px 17px;border-radius:12px;
+  font-size:13.5px;font-weight:600;letter-spacing:-.2px;opacity:0;pointer-events:none;
+  transition:.26s cubic-bezier(.32,.72,0,1);max-width:84%;text-align:center;line-height:1.45}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* 하단 고정 액션 바 */
+.dockbar{flex:none;padding:10px 14px calc(21px + env(safe-area-inset-bottom));
+  background:var(--surface);border-top:1px solid var(--line);display:flex;gap:9px;align-items:center}
+
+/* ============================================================
+   기획 주석 (PRD 매핑)
+   ============================================================ */
+.annot{display:none}
+body.annots .annot{
+  display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
+  background:#EEF2FF;color:#3730A3;border:1px dashed #A5B4FC;border-radius:6px;
+  padding:2px 6px;letter-spacing:0;vertical-align:middle;line-height:1.4;margin:0 0 6px}
+body.annots .annot-block{display:block;margin:0 0 8px}
+
+/* ============================================================
+   개발자 드로어 (화면 목록)
+   ============================================================ */
+.devbtn{position:fixed;right:18px;bottom:18px;z-index:60;height:44px;padding:0 16px;
+  border-radius:99px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;
+  box-shadow:var(--sh-2);display:flex;align-items:center;gap:7px;letter-spacing:-.2px}
+.devbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.1;
+  stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:560px){.devbtn{bottom:calc(78px + env(safe-area-inset-bottom))}}
+.drawer{position:fixed;inset:0;z-index:70;display:none}
+.drawer.on{display:block}
+.drawer-scrim{position:absolute;inset:0;background:rgba(27,22,20,.5)}
+.drawer-panel{position:absolute;right:0;top:0;bottom:0;width:min(400px,90vw);background:var(--surface);
+  box-shadow:-10px 0 40px -12px rgba(50,25,12,.4);display:flex;flex-direction:column}
+.drawer-head{padding:20px 20px 14px;border-bottom:1px solid var(--line);flex:none}
+.drawer-body{padding:6px 14px 26px;overflow-y:auto;flex:1}
+.dgroup{margin-top:18px}
+.dgroup>h4{font-size:11.5px;font-weight:800;color:var(--ink3);letter-spacing:.3px;
+  padding:0 6px 8px;text-transform:uppercase}
+.ditem{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:10px 10px;
+  border-radius:11px;transition:background .13s}
+.ditem:hover{background:var(--surface2)}
+.ditem .dn{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.ditem .dd{font-size:12px;color:var(--ink3);margin-top:2px;line-height:1.45;letter-spacing:-.2px}
+.ditem .dk{flex:none;width:24px;height:24px;border-radius:7px;background:var(--surface2);
+  display:grid;place-items:center;font-size:12px;margin-top:1px}
+.switch{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer}
+.switch input{display:none}
+.switch .track{width:40px;height:23px;border-radius:99px;background:var(--line2);position:relative;transition:.18s;flex:none}
+.switch .track::after{content:'';position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.18s}
+.switch input:checked+.track{background:var(--brand)}
+.switch input:checked+.track::after{transform:translateX(17px)}
+
+/* 애니메이션 */
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.screen>*{animation:fadeUp .26s cubic-bezier(.2,.7,.3,1)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="island"></div>
+    <div class="home-ind"></div>
+    <div class="statusbar">
+      <span id="sb-time">9:41</span>
+      <span class="sb-r">
+        <span class="sb-bar"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span>
+        <svg width="15" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 4.2a10 10 0 0 1 14 0M3.6 6.9a6.4 6.4 0 0 1 8.8 0"/><circle cx="8" cy="9.8" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <span class="sb-bat"><i></i></span>
+      </span>
+    </div>
+    <header class="appbar" id="appbar"></header>
+    <main class="screen" id="screen"></main>
+    <div id="dock"></div>
+    <nav class="tabbar" id="tabbar" hidden></nav>
+
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<button class="devbtn" id="devbtn">
+  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>
+  화면 목록
+</button>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-scrim" data-close-drawer></div>
+  <aside class="drawer-panel">
+    <div class="drawer-head">
+      <div class="between">
+        <div>
+          <h3 style="font-size:18px;font-weight:800;letter-spacing:-.5px">화면 목록</h3>
+          <p class="small muted" style="margin-top:3px">클릭하면 해당 화면으로 바로 이동합니다</p>
+        </div>
+        <button class="iconbtn" data-close-drawer>
+          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;gap:14px;margin-top:14px;flex-wrap:wrap">
+        <label class="switch">
+          <input type="checkbox" id="annotToggle"><span class="track"></span>기획 주석 보기
+        </label>
+        <button class="btn btn-sm btn-line" id="resetBtn">데이터 초기화</button>
+      </div>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+</div>
+
+<script>
+/* ============================================================================
+   골라주개냥 프로토타입
+   - 의존성 없는 단일 HTML. 모든 데이터는 목(mock)이며 서버 호출은 없습니다.
+   - 범위: 우선순위 1~3위(프로필 / 상품 추천 / 성분 분석) + 커머스 기본기 + 예외 케이스
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 사전 정의 */
+const ALLERGENS = ['닭고기','소고기','오리','연어','밀','옥수수','유제품','계란'];
+const CONCERNS  = ['피부/모질','관절','체중관리','치아','소화','신장','눈물자국','기호성'];
+
+const CATS = [
+  {id:'food',  name:'사료',   emo:'🥣'},
+  {id:'treat', name:'간식',   emo:'🍖'},
+  {id:'supp',  name:'영양제', emo:'💊'},
+  {id:'toy',   name:'장난감', emo:'🧸'},
+];
+
+/* 상품 종류마다 비교 기준을 다르게 보여준다 (2.1.3-2) */
+const AXES = {
+  food : '성분 기준',
+  treat: '크기 · 식감 · 기호성 기준',
+  supp : '함량 · 급여 기준',
+  toy  : '내구성 · 안전 기준',
+};
+
+/* n: 표시명, v: 값, u: 단위, ref: 권장/기준, g: 평가(good|warn|bad|mute), p: 게이지 %, tip: 툴팁 */
+const N = (n,v,u,ref,g,p,tip)=>({n,v,u,ref,g,p,tip});
+
+/* ------------------------------------------------------------------- 상품 */
+const PRODUCTS = [
+  { id:'p01', brand:'하루한끼', name:'연어 그레인프리 올라이프', species:'dog', cat:'food',
+    emo:'🐟', price:42000, sale:37800, rating:4.7, kcal:372,
+    allergens:['연어'], concerns:['피부/모질','눈물자국'], stages:['adult','senior'],
+    desc:'곡물을 빼고 연어를 첫 번째 원료로 쓴 전연령 사료. 피부·모질 관리를 겨냥한 오메가3 강화 레시피.',
+    nut:[
+      N('조단백','30','%','26% 이상','good',86,'근육과 장기를 구성하는 핵심 영양소. 성견 유지식 최소 권장은 18%, 고단백 사료는 28~34%대입니다.'),
+      N('조지방','16','%','10% 이상','good',70,'에너지원이자 피부·모질 건강에 관여합니다. 활동량이 적은 아이는 과다 급여 시 체중이 늘 수 있어요.'),
+      N('오메가3','0.9','%','0.5% 이상','good',88,'EPA·DHA가 포함된 지방산. 피부 가려움·모질 개선 근거가 비교적 많은 성분입니다.'),
+      N('조섬유','3.5','%','5% 이하','good',58,'배변 상태에 영향을 줍니다. 너무 높으면 영양 흡수율이 떨어질 수 있습니다.'),
+      N('조회분','7.2','%','8% 이하','warn',84,'사료에 남는 무기질 총량. 8%를 넘으면 원료 품질을 함께 확인해 보는 편이 좋습니다.'),
+      N('수분','8','%','10% 이하','mute',52,'건사료의 일반적인 수분 함량 범위입니다.'),
+      N('칼슘','1.2','%','0.6~2.5%','good',48,'뼈·치아 구성 성분. 대형견 자견은 과잉 급여를 주의해야 합니다.'),
+      N('인','1.0','%','0.5~1.6%','good',45,'칼슘과 균형이 중요합니다. 신장 이슈가 있다면 낮은 제품을 권장합니다.'),
+    ]},
+
+  { id:'p02', brand:'웰포우', name:'데일리 치킨&라이스', species:'dog', cat:'food',
+    emo:'🍗', price:29800, sale:26800, rating:4.4, kcal:355,
+    allergens:['닭고기','밀'], concerns:['체중관리'], stages:['adult'],
+    desc:'가격 부담이 적은 데일리 유지식. 칼로리를 낮춰 체중 관리가 필요한 성견을 겨냥했습니다.',
+    nut:[
+      N('조단백','26','%','26% 이상','good',68,'유지식 기준을 충족하는 수준입니다.'),
+      N('조지방','12','%','10% 이상','good',52,'저지방 설계로 칼로리를 낮췄습니다.'),
+      N('오메가3','0.3','%','0.5% 이상','warn',30,'피부·모질 관리를 목적으로 한다면 다소 부족한 수치입니다.'),
+      N('조섬유','4.5','%','5% 이하','good',72,'포만감을 주어 체중 관리에 도움이 될 수 있습니다.'),
+      N('조회분','8.5','%','8% 이하','warn',95,'권장 상한을 넘습니다. 원료 구성을 함께 확인해 보세요.'),
+      N('수분','10','%','10% 이하','mute',65,'일반적인 범위입니다.'),
+      N('칼슘','1.4','%','0.6~2.5%','good',56,'뼈·치아 구성 성분입니다.'),
+      N('인','1.1','%','0.5~1.6%','good',50,'칼슘과의 비율이 중요합니다.'),
+    ]},
+
+  { id:'p03', brand:'그린바울', name:'저알러지 오리&고구마', species:'dog', cat:'food',
+    emo:'🦆', price:51000, sale:45900, rating:4.8, kcal:365,
+    allergens:['오리'], concerns:['피부/모질','소화'], stages:['adult','senior'],
+    desc:'단일 동물성 단백질(오리)만 사용한 제한 원료 레시피. 식이 알레르기가 의심될 때 선택하는 유형입니다.',
+    nut:[
+      N('조단백','25','%','26% 이상','warn',62,'제한 원료 사료는 단백질이 다소 낮게 설계되는 경우가 있습니다.'),
+      N('조지방','14','%','10% 이상','good',60,'적정 범위입니다.'),
+      N('오메가3','0.8','%','0.5% 이상','good',80,'피부 장벽 관리에 도움이 될 수 있습니다.'),
+      N('조섬유','3.0','%','5% 이하','good',50,'소화 부담이 적은 수준입니다.'),
+      N('조회분','6.4','%','8% 이하','good',68,'권장 범위 안에 있습니다.'),
+      N('수분','9','%','10% 이하','mute',58,'일반적인 범위입니다.'),
+      N('칼슘','1.1','%','0.6~2.5%','good',44,'적정 범위입니다.'),
+      N('인','0.9','%','0.5~1.6%','good',40,'적정 범위입니다.'),
+    ]},
+
+  { id:'p04', brand:'퍼피스텝', name:'퍼피 올라운드 스타터', species:'dog', cat:'food',
+    emo:'🐶', price:33000, sale:0, rating:4.5, kcal:398,
+    allergens:['닭고기'], concerns:['소화'], stages:['puppy'],
+    desc:'이유식을 뗀 자견을 위한 소립 사료. DHA를 더해 성장기 영양을 맞췄습니다.',
+    nut:[
+      N('조단백','32','%','28% 이상(자견)','good',92,'성장기에는 성견보다 높은 단백질이 필요합니다.'),
+      N('조지방','18','%','12% 이상(자견)','good',80,'성장에 필요한 에너지를 공급합니다.'),
+      N('DHA','0.32','%','0.15% 이상','good',90,'자견의 뇌·시각 발달과 관련이 있다고 알려진 지방산입니다.'),
+      N('조섬유','2.8','%','5% 이하','good',46,'소화 부담이 적습니다.'),
+      N('조회분','7.0','%','8% 이하','good',80,'권장 범위 안에 있습니다.'),
+      N('수분','9','%','10% 이하','mute',58,'일반적인 범위입니다.'),
+      N('칼슘','1.5','%','1.0~1.8%(자견)','good',60,'성장기 골격 형성에 필요합니다.'),
+      N('인','1.2','%','0.8~1.6%(자견)','good',55,'칼슘과의 비율이 중요합니다.'),
+    ]},
+
+  { id:'p05', brand:'시니어케어', name:'관절 플러스 시니어', species:'dog', cat:'food',
+    emo:'🦴', price:46000, sale:0, rating:4.6, kcal:340,
+    allergens:['닭고기'], concerns:['관절','체중관리'], stages:['senior'],
+    desc:'7세 이상 노령견을 위한 저칼로리 설계에 글루코사민·MSM을 더했습니다.',
+    nut:[
+      N('조단백','27','%','26% 이상','good',70,'근육량 유지를 위해 노령기에도 단백질은 중요합니다.'),
+      N('조지방','10','%','10% 이상','good',44,'저지방으로 체중 관리를 돕습니다.'),
+      N('글루코사민','1200','mg/kg','1000mg/kg 이상','good',85,'관절 연골 구성 성분으로 알려져 보조제에 널리 쓰입니다.'),
+      N('조섬유','4.8','%','5% 이하','good',76,'포만감을 주는 수준입니다.'),
+      N('조회분','6.8','%','8% 이하','good',74,'권장 범위 안에 있습니다.'),
+      N('수분','9','%','10% 이하','mute',58,'일반적인 범위입니다.'),
+      N('칼슘','1.0','%','0.6~2.5%','good',40,'적정 범위입니다.'),
+      N('인','0.8','%','0.5~1.6%','good',35,'노령기에는 낮은 편이 선호됩니다.'),
+    ]},
+
+  { id:'p06', brand:'캣퍼스트', name:'인도어 헤어볼 케어', species:'cat', cat:'food',
+    emo:'🐱', price:38000, sale:34200, rating:4.3, kcal:360,
+    allergens:['닭고기'], concerns:['소화','체중관리'], stages:['adult'],
+    desc:'실내 생활 고양이를 위한 헤어볼 배출 설계. 활동량이 적은 아이의 칼로리를 고려했습니다.',
+    nut:[
+      N('조단백','32','%','30% 이상(고양이)','good',72,'고양이는 개보다 단백질 요구량이 높습니다.'),
+      N('조지방','13','%','9% 이상','good',56,'적정 범위입니다.'),
+      N('조섬유','6.5','%','3~7%','good',88,'헤어볼 배출을 돕기 위해 섬유를 높인 설계입니다.'),
+      N('타우린','0.18','%','0.10% 이상','good',86,'고양이가 스스로 충분히 합성하지 못하는 필수 아미노산입니다.'),
+      N('조회분','7.8','%','8% 이하','warn',92,'권장 상한에 가깝습니다.'),
+      N('수분','9','%','10% 이하','mute',58,'일반적인 범위입니다.'),
+      N('칼슘','1.1','%','0.6~1.6%','good',52,'적정 범위입니다.'),
+      N('인','1.0','%','0.5~1.3%','good',60,'적정 범위입니다.'),
+    ]},
+
+  { id:'p07', brand:'하루한끼', name:'캣 연어&황태 그레인프리', species:'cat', cat:'food',
+    emo:'🐟', price:44000, sale:0, rating:4.6, kcal:385,
+    allergens:['연어'], concerns:['피부/모질'], stages:['adult','senior'],
+    desc:'곡물을 뺀 고단백 레시피. 연어와 황태로 기호성을 높였습니다.',
+    nut:[
+      N('조단백','36','%','30% 이상(고양이)','good',90,'고단백 설계입니다.'),
+      N('조지방','15','%','9% 이상','good',66,'적정 범위입니다.'),
+      N('오메가3','1.1','%','0.5% 이상','good',92,'피부·모질 관리에 관여합니다.'),
+      N('타우린','0.20','%','0.10% 이상','good',92,'심장·시각 건강에 필수적인 아미노산입니다.'),
+      N('조회분','7.4','%','8% 이하','warn',86,'권장 상한에 가깝습니다.'),
+      N('수분','8','%','10% 이하','mute',52,'일반적인 범위입니다.'),
+      N('칼슘','1.2','%','0.6~1.6%','good',58,'적정 범위입니다.'),
+      N('인','1.1','%','0.5~1.3%','warn',70,'신장 이슈가 있다면 낮은 제품을 권장합니다.'),
+    ]},
+
+  { id:'p08', brand:'리날케어', name:'신장 케어 레시피', species:'cat', cat:'food',
+    emo:'💧', price:56000, sale:50400, rating:4.5, kcal:390,
+    allergens:[], concerns:['신장'], stages:['adult','senior'],
+    desc:'인 함량을 낮추고 오메가3를 더한 신장 관리 목적 레시피입니다.',
+    nut:[
+      N('조단백','28','%','26% 이상','good',60,'신장 관리식은 단백질을 과도하게 높이지 않습니다.'),
+      N('인','0.5','%','0.5% 이하 권장','good',20,'신장 관리에서 가장 중요하게 보는 수치입니다. 낮을수록 부담이 적습니다.'),
+      N('나트륨','0.25','%','0.4% 이하','good',35,'낮게 유지하는 편이 권장됩니다.'),
+      N('오메가3','1.0','%','0.5% 이상','good',90,'신장 관리식에 흔히 강화되는 성분입니다.'),
+      N('타우린','0.22','%','0.10% 이상','good',94,'심장·시각 건강에 필수적입니다.'),
+      N('조지방','16','%','9% 이상','good',70,'열량 확보를 위해 지방을 높인 설계입니다.'),
+      N('조회분','5.9','%','8% 이하','good',60,'권장 범위 안에 있습니다.'),
+      N('수분','8','%','10% 이하','mute',52,'일반적인 범위입니다.'),
+    ]},
+
+  { id:'p09', brand:'쫀득왕', name:'오리 육포 스틱', species:'dog', cat:'treat',
+    emo:'🥩', price:12900, sale:0, rating:4.5, kcal:320,
+    allergens:['오리'], concerns:['기호성'], stages:['puppy','adult','senior'],
+    desc:'오리안심을 저온 건조한 스틱형 간식. 손으로 잘라 급여량을 조절할 수 있습니다.',
+    nut:[
+      N('크기','8','cm','소형견 1/2개 권장','mute',55,'스틱 1개 길이입니다. 소형견은 잘라서 급여하는 편이 좋습니다.'),
+      N('단단함','중간','','–','good',50,'너무 단단하면 치아 손상 위험이 있습니다. 노령견은 부드러운 유형을 권장합니다.'),
+      N('기호성','4.6','/5','리뷰 기반','good',92,'구매자 리뷰의 기호성 태그를 집계한 값입니다.'),
+      N('1개 열량','28','kcal','일일 간식 10% 이내','good',35,'간식은 하루 필요 열량의 10%를 넘지 않는 것이 권장됩니다.'),
+    ]},
+
+  { id:'p10', brand:'크런치냥', name:'동결건조 닭가슴살', species:'cat', cat:'treat',
+    emo:'🍗', price:9800, sale:8800, rating:4.7, kcal:350,
+    allergens:['닭고기'], concerns:['기호성'], stages:['puppy','adult','senior'],
+    desc:'첨가물 없이 닭가슴살만 동결건조했습니다. 급여 전 물에 불려 수분 섭취를 도울 수 있습니다.',
+    nut:[
+      N('크기','2','cm','한 입 크기','good',25,'큐브형으로 급여량 조절이 쉽습니다.'),
+      N('단단함','바삭함','','–','good',40,'물에 불리면 부드러워집니다.'),
+      N('기호성','4.8','/5','리뷰 기반','good',96,'구매자 리뷰의 기호성 태그를 집계한 값입니다.'),
+      N('1개 열량','4','kcal','일일 간식 10% 이내','good',12,'소량 급여에 적합합니다.'),
+    ]},
+
+  { id:'p11', brand:'덴탈프레시', name:'치석케어 덴탈스틱', species:'dog', cat:'treat',
+    emo:'🦷', price:15900, sale:0, rating:0, kcal:290,
+    allergens:[], concerns:['치아'], stages:['adult','senior'],
+    desc:'나선형 구조로 씹는 동안 치면에 마찰을 주도록 설계된 덴탈 간식입니다. (신상품)',
+    nut:[
+      N('크기','11','cm','5~10kg 기준','mute',70,'체중 구간별 사이즈가 나뉩니다.'),
+      N('단단함','단단함','','–','warn',80,'치아가 약한 노령견은 주의가 필요합니다.'),
+      N('기호성','–','','리뷰 없음','mute',0,'아직 리뷰가 없어 집계할 수 없습니다.'),
+      N('1개 열량','62','kcal','일일 간식 10% 이내','warn',72,'열량이 높은 편이라 급여량 조절이 필요합니다.'),
+    ]},
+
+  { id:'p12', brand:'스킨앤코트', name:'피부·모질 오메가3', species:'both', cat:'supp',
+    emo:'💊', price:28000, sale:25200, rating:4.6, kcal:0,
+    allergens:['연어'], concerns:['피부/모질'], stages:['puppy','adult','senior'],
+    desc:'소형 캡슐형 오메가3. 사료 위에 뿌려 급여할 수 있습니다.',
+    nut:[
+      N('EPA','180','mg/캡슐','체중 5kg당 1캡슐','good',82,'염증 반응 조절과 관련이 있다고 알려진 오메가3 지방산입니다.'),
+      N('DHA','120','mg/캡슐','–','good',70,'피부 장벽과 신경계에 관여합니다.'),
+      N('비타민E','15','IU','산패 방지','good',60,'오메가3의 산화를 막기 위해 함께 배합됩니다.'),
+      N('1일 급여','1~2','회','체중 기준','good',50,'체중에 따라 급여 횟수가 달라집니다.'),
+    ]},
+
+  { id:'p13', brand:'조인트업', name:'글루코사민 소프트츄', species:'dog', cat:'supp',
+    emo:'🦵', price:34000, sale:0, rating:4.4, kcal:0,
+    allergens:['닭고기'], concerns:['관절'], stages:['adult','senior'],
+    desc:'씹어 먹는 소프트츄 형태의 관절 보조제입니다.',
+    nut:[
+      N('글루코사민','500','mg/개','체중 10kg당 1개','good',80,'연골 구성 성분으로 관절 보조제에 널리 쓰입니다.'),
+      N('콘드로이틴','200','mg/개','–','good',66,'글루코사민과 함께 배합되는 경우가 많습니다.'),
+      N('MSM','100','mg/개','–','good',50,'관절 보조 목적으로 함께 쓰이는 성분입니다.'),
+      N('1일 급여','1','회','체중 기준','good',40,'체중에 따라 개수가 달라집니다.'),
+    ]},
+
+  { id:'p14', brand:'데일리바이옴', name:'장 건강 유산균 파우더', species:'both', cat:'supp',
+    emo:'🧫', price:22000, sale:19800, rating:4.5, kcal:0,
+    allergens:['유제품'], concerns:['소화'], stages:['puppy','adult','senior'],
+    desc:'스틱 포장 분말형 유산균. 사료에 섞어 급여합니다.',
+    nut:[
+      N('유산균 수','50','억 CFU','10억 CFU 이상','good',88,'CFU는 살아 있는 균의 수를 나타내는 단위입니다.'),
+      N('균주 수','5','종','–','good',62,'여러 균주를 섞으면 정착률이 높아진다고 알려져 있습니다.'),
+      N('프리바이오틱스','포함','','–','good',70,'유산균의 먹이가 되는 성분입니다.'),
+      N('1일 급여','1','포','체중 무관','good',40,'하루 한 포 급여합니다.'),
+    ]},
+
+  { id:'p15', brand:'스니프메이트', name:'노즈워크 스니프 매트', species:'dog', cat:'toy',
+    emo:'🧸', price:24000, sale:21600, rating:4.4, kcal:0,
+    allergens:[], concerns:['기호성'], stages:['puppy','adult','senior'],
+    desc:'사료를 숨겨 코로 찾게 하는 노즈워크 매트. 식사 속도를 늦추는 용도로도 쓰입니다.',
+    nut:[
+      N('내구성','중상','','–','good',72,'강한 무는 힘을 가진 아이는 사용 중 지켜보는 것이 좋습니다.'),
+      N('세척','물세탁','','–','good',90,'세탁기 사용이 가능합니다.'),
+      N('크기','40×40','cm','–','mute',55,'소·중형견에 적합한 크기입니다.'),
+      N('소음','낮음','','–','good',20,'삑삑이가 없어 실내에서 쓰기 좋습니다.'),
+    ]},
+
+  { id:'p16', brand:'우다다', name:'캣닢 플레이 터널', species:'cat', cat:'toy',
+    emo:'🌀', price:19800, sale:0, rating:4.3, kcal:0,
+    allergens:[], concerns:['기호성'], stages:['puppy','adult','senior'],
+    desc:'접이식 3구 터널. 캣닢 파우치가 포함되어 있습니다.',
+    nut:[
+      N('내구성','중','','–','good',55,'발톱에 의한 표면 손상이 생길 수 있습니다.'),
+      N('세척','부분 세척','','–','warn',40,'전체 물세탁은 권장되지 않습니다.'),
+      N('크기','25×90','cm','–','mute',60,'성묘가 통과할 수 있는 지름입니다.'),
+      N('소음','바스락','','–','warn',65,'바스락 소리가 나 예민한 아이는 피하는 편이 좋습니다.'),
+    ]},
+];
+
+/* ------------------------------------------------------------------- 리뷰 */
+/* g: 태그 평가 (good | bad) — AI 요약의 반응별 통계는 이 태그를 집계해 계산합니다. */
+const R = (pid,rating,days,buys,pet,tags,text)=>({pid,rating,days,buys,pet,tags,text});
+const P = (name,species,breed,ageM,kg,concerns)=>({name,species,breed,ageM,kg,concerns});
+
+const REVIEWS = [
+  /* p01 — 소형견 성견 리뷰가 두루 있어 "우리 아이와 비슷한 조건" 필터가 잘 걸립니다 */
+  R('p01',5,62,3, P('콩이','dog','푸들',48,4.8,['피부/모질','눈물자국']),
+    [['기호성','good'],['변 상태','good'],['피부','good']],
+    '눈물자국 때문에 바꿨는데 두 달쯤 지나니 확실히 옅어졌어요. 알갱이가 작아서 잘 먹고 변도 단단해졌습니다.'),
+  R('p01',4,30,1, P('보름','dog','비숑',60,5.6,['피부/모질']),
+    [['기호성','good'],['피부','good'],['변 상태','bad']],
+    '긁는 횟수가 줄어든 건 맞는 것 같아요. 다만 초반 일주일은 변이 좀 무른 편이었습니다. 지금은 괜찮아요.'),
+  R('p01',5,120,4, P('나비','dog','말티즈',72,3.9,['눈물자국']),
+    [['기호성','good'],['눈물자국','good']],
+    '네 번째 재구매입니다. 다른 사료로 바꿨다가 눈물자국이 다시 심해져서 돌아왔어요.'),
+  R('p01',3,14,1, P('두부','dog','포메라니안',36,3.2,['체중관리']),
+    [['기호성','bad']],
+    '입이 짧은 아인지 잘 안 먹네요. 기존 사료랑 섞어서 겨우 먹이는 중입니다. 성분은 좋아 보여요.'),
+  R('p01',5,45,2, P('마루','dog','시바',30,9.4,['피부/모질']),
+    [['기호성','good'],['모질','good'],['변 상태','good']],
+    '털에 윤기가 도는 게 눈에 보여요. 중형견인데 급여량 가이드대로 주니 체중도 잘 유지됩니다.'),
+  R('p01',4,90,2, P('구름','dog','골든리트리버',54,28.0,['관절']),
+    [['기호성','good'],['변 상태','good']],
+    '대형견이라 소모가 빠른데 그래도 계속 사고 있어요. 잘 먹습니다.'),
+
+  /* p02 */
+  R('p02',4,40,2, P('초코','dog','비글',44,11.2,['체중관리']),
+    [['기호성','good'],['체중','good']],
+    '식탐 대마왕인데 이거 먹이고 두 달 만에 400g 빠졌어요. 가성비 좋습니다.'),
+  R('p02',3,21,1, P('havana','dog','닥스훈트',66,7.1,['체중관리']),
+    [['기호성','good'],['변 상태','bad']],
+    '가격은 만족스러운데 변 냄새가 좀 있는 편이에요.'),
+  R('p02',5,75,3, P('range','dog','진돗개',36,18.5,[]),
+    [['기호성','good'],['변 상태','good']],
+    '잘 먹고 탈 없습니다. 대용량이라 대형견 키우기 부담이 덜해요.'),
+
+  /* p03 */
+  R('p03',5,88,3, P('보리','dog','푸들',50,5.4,['피부/모질','소화']),
+    [['기호성','good'],['피부','good'],['변 상태','good']],
+    '닭 알러지 있는 아이라 오리 단일 단백 찾다가 정착했습니다. 발 핥는 게 확실히 줄었어요.'),
+  R('p03',4,35,1, P('설이','dog','말티푸',40,4.2,['피부/모질']),
+    [['기호성','bad'],['피부','good']],
+    '피부는 좋아졌는데 처음에 잘 안 먹어서 애먹었어요. 지금은 적응했습니다.'),
+  R('p03',5,150,5, P('레오','dog','코커스파니엘',84,12.8,['피부/모질','소화']),
+    [['기호성','good'],['피부','good'],['변 상태','good']],
+    '피부염으로 병원 다니다가 제한원료 사료 권유받고 시작했어요. 1년 넘게 먹이는 중입니다.'),
+  R('p03',4,28,1, P('하루','dog','시츄',56,6.0,['소화']),
+    [['기호성','good'],['변 상태','good']],
+    '잘 먹어요. 가격이 좀 있지만 속이 편한지 트림이 줄었습니다.'),
+
+  /* p04 */
+  R('p04',5,50,2, P('뭉치','dog','웰시코기',7,5.5,['소화']),
+    [['기호성','good'],['변 상태','good']],
+    '이유식 떼고 바로 먹였는데 잘 적응했어요. 알갱이가 작아서 좋습니다.'),
+  R('p04',4,26,1, P('별이','dog','포메라니안',5,1.9,[]),
+    [['기호성','good']],
+    '초소형견이라 걱정했는데 잘 씹어 먹네요.'),
+
+  /* p05 — 시니어 중·대형견 리뷰만 존재 → 소형 성견 프로필에서는 '비슷한 조건' 0건 (예외 케이스) */
+  R('p05',5,120,4, P('바둑','dog','래브라도',110,29.5,['관절','체중관리']),
+    [['기호성','good'],['활동성','good'],['체중','good']],
+    '열두 살인데 산책 나갈 때 뒷다리 힘이 예전보다 낫습니다. 계단 오르는 걸 덜 망설여요.'),
+  R('p05',4,60,2, P('덕구','dog','진돗개',132,24.0,['관절']),
+    [['기호성','good'],['활동성','good']],
+    '노견이라 큰 기대 안 했는데 잘 먹고 활동량이 조금 늘었어요.'),
+  R('p05',5,200,6, P('산이','dog','셰퍼드',96,31.0,['관절']),
+    [['기호성','good'],['변 상태','good'],['활동성','good']],
+    '대형 노령견 사료 중에 이만한 게 없어서 계속 먹입니다.'),
+
+  /* p06 */
+  R('p06',4,45,2, P('나비','cat','코리안숏헤어',96,4.3,['소화','체중관리']),
+    [['기호성','good'],['헤어볼','good']],
+    '헤어볼 토하는 횟수가 확실히 줄었어요. 실내묘라 칼로리 낮은 것도 마음에 듭니다.'),
+  R('p06',3,20,1, P('치즈','cat','먼치킨',30,3.8,['체중관리']),
+    [['기호성','bad'],['헤어볼','good']],
+    '효과는 있는데 입맛이 까다로운 아이라 잘 안 먹어요.'),
+  R('p06',5,110,4, P('까망','cat','코리안숏헤어',60,5.1,['소화']),
+    [['기호성','good'],['변 상태','good'],['헤어볼','good']],
+    '세 마리 다 먹이는데 전부 잘 먹습니다. 재구매 계속하고 있어요.'),
+
+  /* p07 */
+  R('p07',5,70,3, P('구름','cat','러시안블루',72,4.6,['피부/모질']),
+    [['기호성','good'],['모질','good']],
+    '털 빠짐이 줄고 윤기가 돌아요. 연어 향이 강해서 그런지 아주 잘 먹습니다.'),
+  R('p07',4,30,1, P('두리','cat','스코티시폴드',48,4.9,['피부/모질']),
+    [['기호성','good'],['변 상태','bad']],
+    '기호성은 최고인데 처음 며칠 변이 물렀어요. 천천히 섞어 급여하시길.'),
+
+  /* p08 */
+  R('p08',5,180,6, P('설탕','cat','페르시안',144,3.6,['신장']),
+    [['기호성','good'],['수치','good']],
+    '신장 수치 때문에 처방식 대신 시작했는데 정기검진 때 수치가 유지되고 있어요. 담당 수의사와 상의 후 급여 중입니다.'),
+  R('p08',4,60,2, P('밤이','cat','코리안숏헤어',120,4.4,['신장']),
+    [['기호성','bad'],['수치','good']],
+    '기호성이 좋진 않아서 습식이랑 섞어 줍니다. 그래도 수치는 괜찮아요.'),
+
+  /* p09 */
+  R('p09',5,30,3, P('보리','dog','푸들',44,5.0,['기호성']),
+    [['기호성','good'],['크기','good']],
+    '잘라서 훈련 간식으로 쓰기 딱 좋아요. 냄새 맡자마자 달려옵니다.'),
+  R('p09',4,15,1, P('감자','dog','말티즈',80,3.4,['치아']),
+    [['기호성','good'],['단단함','bad']],
+    '노견이라 좀 단단한 느낌이에요. 가위로 잘게 잘라서 줍니다.'),
+  R('p09',5,60,4, P('havoc','dog','보더콜리',30,17.0,['기호성']),
+    [['기호성','good']],
+    '훈련용으로 계속 재구매 중입니다.'),
+
+  /* p10 */
+  R('p10',5,40,4, P('나비','cat','코리안숏헤어',90,4.2,['기호성']),
+    [['기호성','good'],['크기','good']],
+    '이거 봉지 소리만 나면 뛰어옵니다. 물에 불려주면 수분 섭취도 되고 좋아요.'),
+  R('p10',5,25,2, P('솜이','cat','랙돌',36,5.0,['기호성']),
+    [['기호성','good']],
+    '첨가물 없는 게 마음에 들어요. 재구매합니다.'),
+
+  /* p12 */
+  R('p12',5,90,3, P('콩이','dog','푸들',52,4.7,['피부/모질']),
+    [['기호성','good'],['피부','good'],['모질','good']],
+    '사료 위에 뿌려주면 잘 먹어요. 겨울에 각질 올라오던 게 줄었습니다.'),
+  R('p12',4,45,2, P('구름','cat','러시안블루',74,4.6,['피부/모질']),
+    [['기호성','bad'],['모질','good']],
+    '고양이는 비린내 나는 걸 싫어할 수도 있어요. 저희 아인 처음엔 피했는데 지금은 먹습니다.'),
+
+  /* p13 */
+  R('p13',4,120,4, P('바둑','dog','래브라도',114,29.0,['관절']),
+    [['기호성','good'],['활동성','good']],
+    '간식처럼 잘 먹어서 급여가 편해요.'),
+
+  /* p14 */
+  R('p14',5,60,3, P('하루','dog','시츄',58,6.2,['소화']),
+    [['기호성','good'],['변 상태','good']],
+    '무른 변이 잦았는데 한 달쯤 먹이니 안정됐어요.'),
+  R('p14',4,30,1, P('까망','cat','코리안숏헤어',62,5.0,['소화']),
+    [['기호성','good'],['변 상태','good']],
+    '가루라서 사료에 섞기 편합니다.'),
+
+  /* p15 */
+  R('p15',4,50,1, P('초코','dog','비글',46,11.5,['체중관리']),
+    [['기호성','good']],
+    '밥 먹는 속도가 확실히 느려졌어요. 세탁도 편합니다.'),
+  R('p15',5,80,2, P('마루','dog','시바',32,9.8,['기호성']),
+    [['기호성','good']],
+    '비 오는 날 산책 못 나갈 때 이걸로 에너지를 뺍니다.'),
+
+  /* p16 */
+  R('p16',4,40,1, P('치즈','cat','먼치킨',32,3.9,['기호성']),
+    [['기호성','good'],['소음','bad']],
+    '잘 들어가서 놀아요. 다만 바스락 소리가 좀 큽니다.'),
+];
+
+/* 사람이 정리한 요약 문장. 반응별 통계 수치는 리뷰 태그에서 계산합니다. */
+const AI_SUMMARY = {
+  p01:{pos:['눈물자국·가려움이 줄었다는 언급이 반복적으로 나타납니다.','알갱이가 작아 소형견도 잘 먹었다는 후기가 많습니다.'],
+       neg:['급여 초반 1주일간 변이 무르다는 후기가 있습니다.','입이 짧은 아이는 기호성이 갈립니다.']},
+  p02:{pos:['체중 관리 목적에서 효과를 봤다는 후기가 많습니다.','대용량 대비 가격 만족도가 높습니다.'],
+       neg:['변 냄새가 있다는 언급이 일부 있습니다.']},
+  p03:{pos:['알레르기가 의심되던 아이의 피부 증상이 완화됐다는 후기가 반복됩니다.','장기 급여 후기(3개월 이상)가 많은 편입니다.'],
+       neg:['첫 급여 시 기호성이 갈린다는 언급이 있습니다.','가격대가 높다는 의견이 있습니다.']},
+  p04:{pos:['이유식 이후 전환이 순조로웠다는 후기가 많습니다.','알갱이가 작아 초소형견도 씹기 편했다고 합니다.'],neg:[]},
+  p05:{pos:['노령견의 활동성이 늘었다는 언급이 반복됩니다.','중·대형 노령견 보호자의 장기 재구매가 많습니다.'],
+       neg:['소형견 후기는 아직 적습니다.']},
+  p06:{pos:['헤어볼 구토 횟수가 줄었다는 후기가 많습니다.'],neg:['까다로운 아이는 기호성이 낮게 나타납니다.']},
+  p07:{pos:['기호성 만족도가 특히 높습니다.','털 빠짐·모질 개선 언급이 있습니다.'],neg:['전환 초기 변이 무르다는 후기가 있습니다.']},
+  p08:{pos:['정기검진 수치가 유지됐다는 후기가 있습니다.'],neg:['기호성이 낮아 습식과 섞어 급여한다는 후기가 있습니다.']},
+  p09:{pos:['훈련 간식으로 잘라 쓰기 좋다는 후기가 많습니다.'],neg:['노령견에게는 단단하다는 의견이 있습니다.']},
+  p10:{pos:['기호성 만족도가 매우 높습니다.','물에 불려 수분 섭취를 돕는다는 활용 후기가 있습니다.'],neg:[]},
+  p12:{pos:['각질·건조함이 줄었다는 언급이 있습니다.'],neg:['고양이는 비린내로 초기 거부가 있을 수 있습니다.']},
+  p13:{pos:['간식처럼 잘 먹어 급여가 편하다는 후기가 있습니다.'],neg:[]},
+  p14:{pos:['무른 변이 안정됐다는 후기가 있습니다.'],neg:[]},
+  p15:{pos:['식사 속도가 느려졌다는 후기가 있습니다.','세탁이 편하다는 언급이 있습니다.'],neg:[]},
+  p16:{pos:['터널 안에서 잘 논다는 후기가 있습니다.'],neg:['바스락 소음이 크다는 의견이 있습니다.']},
+};
+
+/* ============================================================================
+   상태
+   ========================================================================== */
+const KEY = 'gjdn.proto.v1';
+const DEFAULT_STATE = {
+  signedIn:false, provider:null,
+  pets:[], activePet:null,
+  cart:[], orders:[], checkins:{},
+  liked:[], recent:[],
+};
+let S = load();
+
+function load(){
+  try{ const raw = localStorage.getItem(KEY); if(raw) return {...structuredClone(DEFAULT_STATE), ...JSON.parse(raw)}; }
+  catch(e){ /* 시크릿 모드 등에서 접근이 막히면 기본값으로 시작합니다 */ }
+  return structuredClone(DEFAULT_STATE);
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function reset(){ S = structuredClone(DEFAULT_STATE); save(); HIST.length=0; go('splash'); }
+
+/* ============================================================================
+   유틸
+   ========================================================================== */
+const $  = (s,r=document)=>r.querySelector(s);
+const el = document;
+const money = n => n.toLocaleString('ko-KR');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+const uid = ()=> Math.random().toString(36).slice(2,9);
+const product = id => PRODUCTS.find(p=>p.id===id);
+
+const ICONS = {
+  back:'<path d="M15 18 9 12l6-6"/>', next:'<path d="m9 18 6-6-6-6"/>',
+  close:'<path d="M18 6 6 18M6 6l12 12"/>',
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1V9.5"/>',
+  grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  cart:'<path d="M3 4h2.2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.2L20.5 8H6"/><circle cx="9.5" cy="20" r="1.4"/><circle cx="17.5" cy="20" r="1.4"/>',
+  user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/>',
+  bell:'<path d="M18 8.5a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"/><path d="M10.4 20a2 2 0 0 0 3.2 0"/>',
+  heart:'<path d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/>',
+  share:'<circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4.1M8.2 13.2l7.6 4.1"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  filter:'<path d="M4 6h16M7 12h10M10 18h4"/>',
+  check:'<path d="m4.5 12.5 5 5 10-11"/>',
+  spark:'<path d="M12 3.5 13.6 9 19 10.5 13.6 12 12 17.5 10.4 12 5 10.5 10.4 9Z"/><path d="M18.5 15.5 19.2 18l2.3.7-2.3.8-.7 2.5-.7-2.5-2.3-.8 2.3-.7Z"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  alert:'<path d="M12 4 3 19.5h18Z"/><path d="M12 10v4M12 17h.01"/>',
+  compare:'<path d="M12 4v16"/><path d="M7.5 8 4 12l3.5 4M16.5 8l3.5 4-3.5 4"/>',
+  camera:'<path d="M4 8.5h3l1.6-2.2h6.8L17 8.5h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.2"/>',
+  paw:'<ellipse cx="8" cy="8" rx="1.9" ry="2.5"/><ellipse cx="16" cy="8" rx="1.9" ry="2.5"/><ellipse cx="4.8" cy="13" rx="1.7" ry="2.2"/><ellipse cx="19.2" cy="13" rx="1.7" ry="2.2"/><path d="M12 12.5c3 0 5 2.2 5 4.4 0 1.9-1.6 3.1-3.4 2.6-1-.3-2.2-.3-3.2 0-1.8.5-3.4-.7-3.4-2.6 0-2.2 2-4.4 5-4.4Z"/>',
+  sort:'<path d="M7 5v14M7 5 4 8.5M7 5l3 3.5"/><path d="M17 19V5M17 19l3-3.5M17 19l-3-3.5"/>',
+  trash:'<path d="M4 7h16M9.5 7V5h5v2M6.5 7l1 13h9l1-13"/>',
+  edit:'<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17Z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 2"/>',
+  apple:'<path fill="currentColor" stroke="none" d="M16.3 12.6c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.5 0-2.8.8-3.6 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.6 2.2 2.7 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.2 0 1.9-1 2.6-2.1.8-1.2 1.2-2.4 1.2-2.5-.1 0-2.2-.9-2.2-3.1ZM14.1 6.1c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 2-.5 2.5-1.2Z"/>',
+};
+const ic = (name, cls='') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+
+/* ============================================================================
+   반려동물 도메인 계산
+   ========================================================================== */
+const STAGE_LABEL = {
+  dog:{puppy:'퍼피', adult:'어덜트', senior:'시니어'},
+  cat:{puppy:'키튼', adult:'어덜트', senior:'시니어'},
+};
+function stageOf(pet){
+  const m = pet.ageM ?? 0;
+  if (pet.species === 'cat') return m < 12 ? 'puppy' : (m < 120 ? 'adult' : 'senior');
+  return m < 12 ? 'puppy' : (m < 84 ? 'adult' : 'senior');
+}
+const stageLabel = pet => STAGE_LABEL[pet.species][stageOf(pet)];
+function ageText(m){
+  if (m < 12) return `${m}개월`;
+  const y = Math.floor(m/12), r = m%12;
+  return r ? `${y}세 ${r}개월` : `${y}세`;
+}
+const speciesLabel = s => s === 'cat' ? '고양이' : '강아지';
+
+/* 받침 유무에 따라 조사를 골라 붙입니다 */
+const JOSA = {'은는':['은','는'], '이가':['이','가'], '을를':['을','를'], '과와':['과','와']};
+function hasBatchim(str){
+  const ch = String(str).trim().slice(-1), code = ch.charCodeAt(0);
+  if (code < 0xAC00 || code > 0xD7A3) return true;   /* 한글 음절이 아니면 받침 있는 것으로 처리 */
+  return (code - 0xAC00) % 28 !== 0;
+}
+function J(name, key){ const [a,b] = JOSA[key]; return esc(name) + (hasBatchim(name) ? a : b); }
+const activePet = () => S.pets.find(p=>p.id===S.activePet) || S.pets[0] || null;
+
+/* 일일 권장 칼로리 (RER × 생애주기·중성화 계수) — 급여량 가이드에 사용 (2.1.5-4) */
+function dailyKcal(pet){
+  const rer = 70 * Math.pow(Math.max(pet.kg,0.5), 0.75);
+  const st = stageOf(pet);
+  let f;
+  if (pet.species === 'cat') f = st==='puppy' ? 2.5 : (st==='senior' ? 1.1 : (pet.neutered ? 1.2 : 1.4));
+  else                      f = st==='puppy' ? 2.5 : (st==='senior' ? 1.4 : (pet.neutered ? 1.6 : 1.8));
+  if (pet.concerns.includes('체중관리')) f -= 0.2;
+  return Math.round(rer * f);
+}
+function gramsPerDay(pet, p){
+  if (!p.kcal) return null;
+  return Math.round(dailyKcal(pet) / (p.kcal/100));
+}
+
+/* ============================================================================
+   맞춤 점수 (2.1.5-3) — 프로필을 기준으로 상품을 해석해 점수와 근거를 만듭니다.
+   ========================================================================== */
+function scoreProduct(p, pet){
+  if (!pet) return null;
+  if (p.species !== 'both' && p.species !== pet.species) return null;
+
+  let score = 46;
+  const plus = [], minus = [];
+  const st = stageOf(pet), stL = STAGE_LABEL[pet.species][st];
+
+  /* 생애주기 */
+  if (p.stages.includes(st)){ score += 10; plus.push(`${stL} 시기에 맞춰 설계된 제품이에요`); }
+  else { score -= 10; minus.push(`${stL} 전용으로 설계된 제품은 아니에요`); }
+
+  /* 알레르기 — 가장 강한 감점 요인 */
+  const hit = p.allergens.filter(a => pet.allergies.includes(a));
+  if (hit.length){
+    score -= 38;
+    minus.push(`${J(pet.name,'이가')} 피해야 할 <b>${esc(hit.join(', '))}</b>${hasBatchim(hit.join(', '))?'이':'가'} 들어 있어요`);
+  } else if (pet.allergies.length){
+    score += 6;
+    plus.push(`등록한 알레르기 성분이 들어 있지 않아요 · ${esc(pet.allergies.join(', '))}`);
+  }
+
+  /* 건강 관심사 — 가점은 최대 2개까지만 반영합니다 */
+  const care = p.concerns.filter(c => pet.concerns.includes(c));
+  care.forEach((c,i) => { if (i < 2) score += 7; plus.push(`<b>${esc(c)}</b> 관리를 목적으로 한 성분 구성이에요`); });
+
+  /* 성분 평가 */
+  const good = p.nut.filter(n=>n.g==='good').length;
+  const warn = p.nut.filter(n=>n.g==='warn').length;
+  score += good * 1.6 - warn * 5;
+  p.nut.filter(n=>n.g==='warn').forEach(n => minus.push(`${n.n} ${n.v}${n.u} — 권장 기준(${n.ref})을 벗어나요`));
+
+  /* 리뷰 신뢰도 */
+  const rc = reviewsFor(p.id).length;
+  if (p.rating) score += (p.rating - 4.3) * 10;
+  if (rc === 0){ score -= 4; minus.push('아직 리뷰가 없어 사용 후기를 참고하기 어려워요'); }
+
+  /* 신장 이슈가 있으면 인 함량을 직접 본다 */
+  if (pet.concerns.includes('신장')){
+    const ph = p.nut.find(n=>n.n==='인');
+    if (ph){
+      const v = parseFloat(ph.v);
+      if (v <= 0.6){ score += 7; plus.push(`인 함량이 ${ph.v}%로 낮아 신장 부담이 적어요`); }
+      else if (v >= 1.0){ score -= 10; minus.push(`인 함량이 ${ph.v}%로 높은 편이라 신장 관리에는 불리해요`); }
+    }
+  }
+
+  return {
+    score: Math.round(clamp(score, 20, 97)),
+    plus, minus,
+    blocked: hit.length > 0,
+    allergyHit: hit,
+  };
+}
+const scoreColor = v => v >= 80 ? 'var(--good)' : v >= 60 ? 'var(--brand)' : v >= 45 ? 'var(--warn)' : 'var(--bad)';
+const scoreWord  = v => v >= 80 ? '아주 잘 맞아요' : v >= 60 ? '잘 맞는 편이에요' : v >= 45 ? '확인이 필요해요' : '권장하지 않아요';
+
+function ringHTML(v, size='' ){
+  return `<div class="ring ${size}" style="--v:${v};--rc:${scoreColor(v)}"><b>${v}</b><i>점</i></div>`;
+}
+
+/* 프로필 기준으로 정렬된 추천 목록 */
+function recommend(pet, opt={}){
+  const list = PRODUCTS
+    .map(p => ({p, s: scoreProduct(p, pet)}))
+    .filter(x => x.s)
+    .filter(x => opt.cat ? x.p.cat === opt.cat : true)
+    .filter(x => opt.includeBlocked ? true : !x.s.blocked);
+  list.sort((a,b)=> b.s.score - a.s.score);
+  return opt.limit ? list.slice(0, opt.limit) : list;
+}
+
+/* ============================================================================
+   리뷰 (2.1.2)
+   ========================================================================== */
+const reviewsFor = pid => REVIEWS.filter(r=>r.pid===pid);
+
+/* "우리 아이와 비슷한 조건" 판정 — 종·생애주기·체중대·관심사를 함께 봅니다 */
+function isSimilar(r, pet){
+  if (!pet) return false;
+  if (r.pet.species !== pet.species) return false;
+  const rStage = stageOf({species:r.pet.species, ageM:r.pet.ageM});
+  let hits = 0;
+  if (rStage === stageOf(pet)) hits++;
+  if (Math.abs(r.pet.kg - pet.kg) / Math.max(pet.kg,0.1) <= 0.35) hits++;
+  if (r.pet.concerns.some(c=>pet.concerns.includes(c))) hits++;
+  if (r.pet.breed === pet.breed) hits++;
+  return hits >= 3;
+}
+
+/* 리뷰 태그를 집계한 반응별 통계 (DB 집계 + AI 요약을 분리해 표시) */
+function reviewStats(list){
+  const m = {};
+  list.forEach(r => r.tags.forEach(([k,g]) => {
+    m[k] = m[k] || {good:0, total:0};
+    m[k].total++; if (g==='good') m[k].good++;
+  }));
+  return Object.entries(m)
+    .map(([k,v]) => ({k, pct: Math.round(v.good/v.total*100), n:v.total}))
+    .sort((a,b)=> b.n - a.n || b.pct - a.pct);
+}
+const stars = n => '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5-n);
+
+/* ============================================================================
+   장바구니 / 주문
+   ========================================================================== */
+const priceOf = p => p.sale || p.price;
+const cartCount = () => S.cart.reduce((a,c)=>a+c.qty, 0);
+const cartTotal = () => S.cart.reduce((a,c)=> a + priceOf(product(c.pid)) * c.qty, 0);
+
+function addCart(pid, qty=1, forPets=null){
+  const line = S.cart.find(c=>c.pid===pid);
+  if (line) line.qty += qty;
+  else S.cart.push({pid, qty, forPets: forPets || (activePet() ? [activePet().id] : [])});
+  save(); toast('장바구니에 담았어요'); paintTabs();
+}
+function setQty(pid, d){
+  const line = S.cart.find(c=>c.pid===pid); if(!line) return;
+  line.qty = Math.max(1, line.qty + d); save(); render();
+}
+function removeCart(pid){ S.cart = S.cart.filter(c=>c.pid!==pid); save(); render(); toast('삭제했어요'); }
+
+/* ============================================================================
+   화면 전환 엔진
+   ========================================================================== */
+let FORCE_EMPTY = null;
+const HIST = [];
+let route = {id:'splash', params:{}};
+const TABS = [
+  {id:'home',     icon:'home',   label:'홈'},
+  {id:'category', icon:'grid',   label:'카테고리'},
+  {id:'search',   icon:'search', label:'검색'},
+  {id:'cart',     icon:'cart',   label:'장바구니'},
+  {id:'my',       icon:'user',   label:'MY'},
+];
+
+function go(id, params={}, replace=false){
+  FORCE_EMPTY = null;
+  if (!replace && route.id) HIST.push({...route});
+  route = {id, params};
+  $('#screen').scrollTop = 0;
+  render();
+}
+function back(){
+  const prev = HIST.pop();
+  route = prev || {id:'home', params:{}};
+  $('#screen').scrollTop = 0;
+  render();
+}
+/* 탭 이동은 히스토리를 쌓지 않습니다 */
+function goTab(id){ HIST.length = 0; route = {id, params:{}}; $('#screen').scrollTop=0; render(); }
+
+function render(){
+  const S_ = SCREENS[route.id];
+  if (!S_){ console.warn('알 수 없는 화면:', route.id); return go('home',{},true); }
+  const p = route.params || {};
+
+  /* 앱바 */
+  const bar = $('#appbar');
+  const head = S_.appbar ? S_.appbar(p) : null;
+  if (head === null){ bar.hidden = true; bar.innerHTML=''; }
+  else { bar.hidden = false; bar.innerHTML = head; }
+
+  /* 본문 */
+  $('#screen').innerHTML = S_.view(p);
+
+  /* 하단 고정 액션 */
+  $('#dock').innerHTML = S_.dock ? S_.dock(p) : '';
+
+  /* 탭바 */
+  const showTabs = !!S_.tab;
+  $('#tabbar').hidden = !showTabs;
+  if (showTabs) paintTabs();
+
+  document.title = (S_.title ? S_.title(p) + ' · ' : '') + '골라주개냥 프로토타입';
+}
+function paintTabs(){
+  $('#tabbar').innerHTML = TABS.map(t=>{
+    const on = SCREENS[route.id]?.tab === t.id;
+    const badge = t.id==='cart' && cartCount() ? `<span class="tab-badge">${cartCount()}</span>` : '';
+    return `<button class="${on?'on':''}" onclick="goTab('${t.id}')">${badge}${ic(t.icon)}<span>${t.label}</span></button>`;
+  }).join('');
+}
+
+/* 앱바 헬퍼 */
+const barBack = (title, right='') =>
+  `<button class="iconbtn" onclick="back()">${ic('back')}</button><h1>${title}</h1>${right}`;
+const barMain = (title, right='') =>
+  `<h1 style="padding-left:6px">${title}</h1>${right}`;
+const barCart = () =>
+  `<button class="iconbtn" onclick="go('cart')" style="position:relative">${ic('cart')}${cartCount()?'<span class="dot"></span>':''}</button>`;
+
+/* 토스트 / 바텀시트 */
+let toastT;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('on'), 1900);
+}
+function openSheet(html){
+  $('#sheet').innerHTML = `<div class="sheet-grab"></div>${html}`;
+  $('#sheet').classList.add('on'); $('#scrim').classList.add('on');
+}
+function closeSheet(){ $('#sheet').classList.remove('on'); $('#scrim').classList.remove('on'); }
+$('#scrim').addEventListener('click', closeSheet);
+
+/* 성분 툴팁 */
+function tipSheet(name, text){
+  openSheet(`<div class="sheet-head"><h3>${esc(name)}</h3></div>
+    <div class="sheet-body"><p style="font-size:14px;line-height:1.7;color:var(--ink2);padding-bottom:8px">${esc(text)}</p>
+    <div class="notice notice-info" style="margin-bottom:8px">${ic('info')}<span>참고용 정보이며 진단·처방을 대신하지 않습니다. 질환이 있는 경우 수의사와 상의하세요.</span></div></div>
+    <div class="sheet-foot"><button class="btn btn-dark btn-block" onclick="closeSheet()">확인</button></div>`);
+}
+
+/* ============================================================================
+   공용 뷰 조각
+   ========================================================================== */
+const an = (t, block=false) => `<span class="annot${block?' annot-block':''}">기획 ${t}</span>`;
+function renderDock(){ const s=SCREENS[route.id]; $('#dock').innerHTML = s.dock ? s.dock(route.params||{}) : ''; }
+
+function priceHTML(p){
+  if (!p.sale) return `<span class="pprice">${money(p.price)}원</span>`;
+  const off = Math.round((1 - p.sale/p.price) * 100);
+  return `<span class="pprice"><em>${off}%</em>${money(p.sale)}원</span>
+          <span class="tiny strike">${money(p.price)}원</span>`;
+}
+
+/* 목록형 상품 카드 */
+function pRow(p, pet, opts={}){
+  const s = pet ? scoreProduct(p, pet) : null;
+  const rc = reviewsFor(p.id).length;
+  return `<button class="plist" onclick="go('product',{id:'${p.id}'})">
+    <div class="thumb"><span>${p.emo}</span></div>
+    <div class="info">
+      <div class="pbrand">${esc(p.brand)}</div>
+      <div class="pname">${esc(p.name)}</div>
+      <div class="row" style="gap:6px;margin-top:1px">${priceHTML(p)}</div>
+      <div class="row" style="gap:6px;margin-top:2px">
+        <span class="prate">${p.rating ? `★ ${p.rating.toFixed(1)} · 리뷰 ${rc}` : '리뷰 없음'}</span>
+      </div>
+      ${s && s.blocked ? `<div style="margin-top:5px"><span class="badge badge-bad">${ic('alert')}${esc(s.allergyHit.join(', '))} 포함</span></div>`
+        : (s && opts.why !== false && s.plus[0] ? `<div class="why" style="margin-top:6px">${ic('spark')}<span>${s.plus[0]}</span></div>` : '')}
+    </div>
+    ${s ? `<div style="display:flex;align-items:flex-start">${ringHTML(s.score,'sm')}</div>` : ''}
+  </button>`;
+}
+
+/* 그리드형 상품 카드 */
+function pCard(p, pet, w='') {
+  const s = pet ? scoreProduct(p, pet) : null;
+  return `<button class="pcard" style="${w}" onclick="go('product',{id:'${p.id}'})">
+    <div class="thumb" style="width:100%;aspect-ratio:1;font-size:44px">
+      <span>${p.emo}</span>
+      ${s ? `<div class="pcard-top">${ringHTML(s.score,'sm')}</div>` : ''}
+      ${s && s.blocked ? `<div style="position:absolute;bottom:6px;left:6px;z-index:2"><span class="badge badge-bad">알레르기</span></div>`:''}
+    </div>
+    <div class="pbrand">${esc(p.brand)}</div>
+    <div class="pname">${esc(p.name)}</div>
+    <div class="row" style="gap:5px;flex-wrap:wrap">${priceHTML(p)}</div>
+  </button>`;
+}
+
+/* 상단 반려동물 요약 + 전환 */
+function petHero(pet){
+  if (!pet) return '';
+  const st = stageLabel(pet);
+  return `<button class="pethero" style="width:100%;text-align:left" onclick="petSwitchSheet()">
+    <div class="pet-ava">${pet.emo}</div>
+    <div style="flex:1;min-width:0">
+      <div class="row" style="gap:5px">
+        <b style="font-size:15.5px;letter-spacing:-.4px">${esc(pet.name)}</b>
+        <span class="badge badge-mute">${st}</span>
+        ${pet.allergies.length ? `<span class="badge badge-warn">알레르기 ${pet.allergies.length}</span>`:''}
+      </div>
+      <div class="tiny muted" style="margin-top:3px">
+        ${esc(pet.breed||speciesLabel(pet.species))} · ${ageText(pet.ageM)} · ${pet.kg}kg
+      </div>
+    </div>
+    <span class="iconbtn" style="pointer-events:none">${ic('next')}</span>
+  </button>`;
+}
+
+function petSwitchSheet(){
+  openSheet(`<div class="sheet-head">
+      <h3>어떤 아이 기준으로 볼까요?</h3>
+      <p class="small muted" style="margin-top:3px">선택한 아이를 기준으로 추천·성분·리뷰가 다시 계산됩니다</p>
+    </div>
+    <div class="sheet-body">
+      ${S.pets.map(p=>`
+        <button style="display:flex;gap:11px;align-items:center;width:100%;padding:13px 4px;border-bottom:1px solid var(--line);text-align:left"
+                onclick="S.activePet='${p.id}';save();closeSheet();render();toast('${esc(p.name)} 기준으로 바꿨어요')">
+          <div class="pet-ava">${p.emo}</div>
+          <div style="flex:1;min-width:0">
+            <b style="font-size:14.5px">${esc(p.name)}</b>
+            <div class="tiny muted" style="margin-top:2px">${esc(p.breed)} · ${ageText(p.ageM)} · ${p.kg}kg</div>
+          </div>
+          ${S.activePet===p.id ? `<span style="color:var(--brand)">${ic('check')}</span>`:''}
+        </button>`).join('')}
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-line" style="flex:1" onclick="closeSheet()">닫기</button>
+      <button class="btn btn-primary" style="flex:1" onclick="closeSheet();startPetForm()">아이 추가하기</button>
+    </div>`);
+}
+
+/* ============================================================================
+   화면 정의
+   ========================================================================== */
+const SCREENS = {};
+
+/* ---------------------------------------------------------------- 스플래시 */
+SCREENS.splash = {
+  appbar: ()=>null,
+  view: ()=>`
+    <div style="height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 30px;
+                background:linear-gradient(170deg,#FFF3EC 0%,#FDFBFA 55%,#EAF5F4 100%)">
+      <div style="font-size:74px;line-height:1;margin-bottom:6px">🐶</div>
+      <div style="font-size:74px;line-height:1;margin:-30px 0 0 62px">🐱</div>
+      <h1 style="font-size:31px;font-weight:800;letter-spacing:-1.2px;margin-top:22px">골라주개냥</h1>
+      <p style="text-align:center;margin-top:10px;font-size:14.5px;color:var(--ink2);line-height:1.65;letter-spacing:-.3px">
+        정보가 없는 게 아니라,<br><b style="color:var(--brand-deep)">우리 아이에게 적용할 정보</b>가 부족했던 거예요.
+      </p>
+      <div style="margin-top:26px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+        <span class="badge badge-brand">프로필 기준 추천</span>
+        <span class="badge badge-brand">성분 해석</span>
+        <span class="badge badge-brand">우리 아이와 비슷한 리뷰</span>
+      </div>
+      ${an('문제1 · 문제2 — 핵심 가치 제안', true)}
+    </div>`,
+  dock: ()=>`<div class="dockbar" style="flex-direction:column;gap:8px;border-top:0;background:transparent">
+      <button class="btn btn-primary btn-block" onclick="go('login')">시작하기</button>
+      <button class="btn btn-ghost btn-block" style="height:38px" onclick="seedDemo()">데모 데이터로 둘러보기</button>
+    </div>`,
+};
+
+/* ------------------------------------------------------------------ 로그인 */
+const SNS = [
+  {id:'apple',  name:'Apple로 계속하기',   bg:'#000000', fg:'#fff',    icon:'apple'},
+  {id:'kakao',  name:'카카오로 시작하기', bg:'#FEE500', fg:'#191600', emo:'💬'},
+  {id:'naver',  name:'네이버로 시작하기', bg:'#03C75A', fg:'#fff',    emo:'N'},
+  {id:'google', name:'Google로 시작하기', bg:'#fff',    fg:'#1B1614', emo:'G', line:true},
+];
+SCREENS.login = {
+  title: ()=>'로그인',
+  appbar: ()=>barBack(''),
+  view: ()=>`
+    <div class="pad" style="padding-top:8px">
+      <h2 style="font-size:23px;font-weight:800;letter-spacing:-.8px;line-height:1.35">
+        3초 만에 시작하고<br>우리 아이 기준을 만들어요
+      </h2>
+      <p class="small muted" style="margin-top:9px">가입하면 반려동물 프로필을 기준으로 추천이 계산됩니다</p>
+      ${an('2.2 플로우 1~2 · SNS 회원가입', true)}
+      <div class="stack" style="margin-top:24px;gap:9px">
+        ${SNS.map(s=>`
+          <button class="btn btn-block" style="background:${s.bg};color:${s.fg};${s.line?'border:1.5px solid var(--line2)':''};height:50px"
+                  onclick="signIn('${s.id}')">
+            <span style="font-weight:800;width:20px;display:grid;place-items:center">${s.icon?ic(s.icon):s.emo}</span>${s.name}
+          </button>`).join('')}
+      </div>
+      <div class="row" style="margin:20px 0 14px"><div style="flex:1;height:1px;background:var(--line)"></div>
+        <span class="tiny muted">또는</span><div style="flex:1;height:1px;background:var(--line)"></div></div>
+      <button class="btn btn-line btn-block" onclick="signIn('email')">이메일로 가입하기</button>
+      <p class="tiny muted" style="margin-top:8px;line-height:1.55">
+        · iOS 앱에서 제3자 소셜 로그인을 제공하면 App Store 심사 지침상 Apple 로그인도 함께 제공해야 합니다<br>
+        · 백엔드팀 확인 필요 항목: 소셜 로그인 외 자체 회원가입 지원 여부
+      </p>
+      <p class="tiny muted" style="margin-top:20px;text-align:center;line-height:1.6">
+        가입 시 <u>이용약관</u>과 <u>개인정보 처리방침</u>에 동의하게 됩니다
+      </p>
+    </div>`,
+};
+function signIn(provider){
+  S.signedIn = true; S.provider = provider; save();
+  if (S.pets.length) goTab('home'); else go('petintro');
+}
+
+/* ------------------------------------------------- 프로필 등록 인트로 */
+SCREENS.petintro = {
+  title: ()=>'프로필 등록',
+  appbar: ()=>barBack(''),
+  view: ()=>`
+    <div class="pad">
+      <span class="badge badge-brand">1단계</span>
+      <h2 style="font-size:22px;font-weight:800;letter-spacing:-.7px;line-height:1.4;margin-top:10px">
+        우리 아이를 알려주시면<br>모든 화면이 그 아이 기준으로 바뀝니다
+      </h2>
+      ${an('2.1.1 프로필 · RICE 1순위(83)', true)}
+      <div class="stack" style="margin-top:22px">
+        ${[
+          ['🎯','추천이 달라져요','품종·나이·체중·알레르기를 기준으로 맞춤 점수를 계산합니다'],
+          ['🧪','성분이 해석돼요','수치를 나열하는 대신 우리 아이 기준으로 좋고 나쁨을 표시합니다'],
+          ['💬','리뷰가 걸러져요','조건이 비슷한 보호자의 후기만 골라서 보여줍니다'],
+        ].map(([e,t,d])=>`
+          <div class="card flat row" style="align-items:flex-start;gap:12px">
+            <div style="font-size:26px;line-height:1.1">${e}</div>
+            <div><b style="font-size:14.5px;letter-spacing:-.3px">${t}</b>
+              <p class="small muted" style="margin-top:3px;line-height:1.55">${d}</p></div>
+          </div>`).join('')}
+      </div>
+      <div class="notice notice-info" style="margin-top:16px">${ic('info')}
+        <span>입력한 정보는 추천 계산에만 쓰입니다. 진료 기록 등 민감정보는 선택 입력이며 별도 동의 후 저장됩니다.</span></div>
+    </div>`,
+  dock: ()=>`<div class="dockbar"><button class="btn btn-primary btn-block" onclick="startPetForm()">프로필 등록하기</button></div>`,
+};
+
+/* ------------------------------------------------------- 프로필 등록 폼 */
+let FORM = null;
+const BREEDS = {
+  dog:['푸들','말티즈','포메라니안','비숑프리제','시츄','치와와','닥스훈트','웰시코기','시바','비글','골든리트리버','래브라도','진돗개','믹스'],
+  cat:['코리안숏헤어','러시안블루','스코티시폴드','먼치킨','페르시안','랙돌','뱅갈','아메리칸숏헤어','믹스'],
+};
+const EMOJI = {dog:['🐶','🐕','🐩','🦮','🐕‍🦺'], cat:['🐱','🐈','🐈‍⬛','😺','🐾']};
+const STEPS = 5;
+
+function startPetForm(){
+  FORM = {step:1, species:null, name:'', emo:'🐶', breed:'', ageM:null, sex:null,
+          neutered:false, kg:null, activity:'보통', allergies:[], concerns:[], memo:''};
+  go('petform');
+}
+function setF(k,v){ FORM[k]=v; render(); }
+function toggleIn(arr,v){ const i=FORM[arr].indexOf(v); i<0?FORM[arr].push(v):FORM[arr].splice(i,1); render(); }
+function stepValid(){
+  const f = FORM;
+  if (f.step===1) return !!f.species && f.name.trim().length>0;
+  if (f.step===2) return !!f.breed && f.ageM!==null && f.ageM!=='' && !isNaN(f.ageM);
+  if (f.step===3) return f.kg!==null && f.kg!=='' && !isNaN(f.kg) && Number(f.kg)>0;
+  return true;
+}
+function nextStep(){
+  if (FORM.step < STEPS){ FORM.step++; $('#screen').scrollTop=0; render(); return; }
+  const pet = {
+    id:uid(), name:FORM.name.trim(), emo:FORM.emo, species:FORM.species, breed:FORM.breed,
+    ageM:Number(FORM.ageM), sex:FORM.sex, neutered:FORM.neutered, kg:Number(FORM.kg),
+    activity:FORM.activity, allergies:[...FORM.allergies], concerns:[...FORM.concerns], memo:FORM.memo,
+  };
+  S.pets.push(pet); S.activePet = pet.id; save();
+  go('petdone',{id:pet.id}, true);
+}
+function prevStep(){ if(FORM.step>1){ FORM.step--; $('#screen').scrollTop=0; render(); } else back(); }
+
+SCREENS.petform = {
+  title: ()=>'프로필 등록',
+  appbar: ()=>`<button class="iconbtn" onclick="prevStep()">${ic('back')}</button>
+    <div class="progress" style="margin:0 8px"><i style="width:${FORM.step/STEPS*100}%"></i></div>
+    <span class="tiny muted" style="width:30px;text-align:right">${FORM.step}/${STEPS}</span>`,
+  view: ()=>{
+    const f = FORM;
+    if (f.step===1) return `<div class="pad">
+      <h2 style="font-size:21px;font-weight:800;letter-spacing:-.6px;line-height:1.4">누구를 위한 쇼핑인가요?</h2>
+      ${an('2.1.1-1 기본 정보', true)}
+      <div class="field" style="margin-top:20px">
+        <div class="seg">
+          <button class="opt ${f.species==='dog'?'on':''}" onclick="FORM.emo='🐶';setF('species','dog')"><span class="emo">🐶</span>강아지</button>
+          <button class="opt ${f.species==='cat'?'on':''}" onclick="FORM.emo='🐱';setF('species','cat')"><span class="emo">🐱</span>고양이</button>
+        </div>
+      </div>
+      ${f.species ? `
+      <div class="field">
+        <label class="label">이름</label>
+        <input class="input" placeholder="예) 보리" value="${esc(f.name)}"
+               oninput="FORM.name=this.value;renderDock()">
+      </div>
+      <div class="field">
+        <label class="label">프로필 사진</label>
+        <div class="chip-wrap">
+          ${EMOJI[f.species].map(e=>`
+            <button class="opt ${f.emo===e?'on':''}" style="width:58px;padding:10px 0" onclick="setF('emo','${e}')">
+              <span class="emo" style="margin:0;font-size:24px">${e}</span></button>`).join('')}
+          <button class="opt" style="width:58px;padding:10px 0;color:var(--ink3)"
+                  onclick="toast('프로토타입에서는 사진 업로드를 지원하지 않습니다')">
+            <span class="emo" style="margin:0;font-size:20px">📷</span></button>
+        </div>
+        <p class="hint">사진으로 등록하면 품종·나이 추정을 제안할 예정입니다 (기획 2.1.1-1)</p>
+      </div>` : ''}
+    </div>`;
+
+    if (f.step===2) return `<div class="pad">
+      <h2 style="font-size:21px;font-weight:800;letter-spacing:-.6px;line-height:1.4">${esc(f.name)}에 대해 알려주세요</h2>
+      <p class="small muted" style="margin-top:6px">생애주기에 맞는 상품을 골라내는 데 쓰입니다</p>
+      <div class="field" style="margin-top:20px">
+        <label class="label">품종</label>
+        <div class="chip-wrap">
+          ${BREEDS[f.species].map(b=>`<button class="chip brand ${f.breed===b?'on':''}" onclick="setF('breed','${b}')">${b}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">나이 (개월)</label>
+        <input class="input" type="number" inputmode="numeric" placeholder="예) 48"
+               value="${f.ageM ?? ''}" oninput="FORM.ageM=this.value;renderDock();updateStage()">
+        <p class="hint" id="stageHint">${f.ageM ? `${STAGE_LABEL[f.species][stageOf({species:f.species,ageM:Number(f.ageM)})]} 시기예요` : '개월 수로 입력해 주세요 (3세 = 36)'}</p>
+      </div>
+      <div class="field">
+        <label class="label">성별 · 중성화</label>
+        <div class="seg">
+          <button class="opt ${f.sex==='f'?'on':''}" style="padding:11px" onclick="setF('sex','f')">여아</button>
+          <button class="opt ${f.sex==='m'?'on':''}" style="padding:11px" onclick="setF('sex','m')">남아</button>
+          <button class="opt ${f.neutered?'on':''}" style="padding:11px" onclick="setF('neutered',!FORM.neutered)">중성화 완료</button>
+        </div>
+        <p class="hint">중성화 여부에 따라 하루 권장 칼로리가 달라집니다</p>
+      </div>
+    </div>`;
+
+    if (f.step===3) return `<div class="pad">
+      <h2 style="font-size:21px;font-weight:800;letter-spacing:-.6px;line-height:1.4">체중과 활동량</h2>
+      <p class="small muted" style="margin-top:6px">적정 급여량 가이드를 계산하는 데 쓰입니다</p>
+      <div class="field" style="margin-top:20px">
+        <label class="label">체중 (kg)</label>
+        <input class="input" type="number" inputmode="decimal" step="0.1" placeholder="예) 5.2"
+               value="${f.kg ?? ''}" oninput="FORM.kg=this.value;renderDock()">
+      </div>
+      <div class="field">
+        <label class="label">활동량</label>
+        <div class="seg">
+          ${['적음','보통','많음'].map(a=>`<button class="opt ${f.activity===a?'on':''}" style="padding:11px" onclick="setF('activity','${a}')">${a}</button>`).join('')}
+        </div>
+      </div>
+      ${f.kg && !isNaN(f.kg) && Number(f.kg)>0 ? `
+      <div class="card flat" style="margin-top:4px">
+        <div class="row" style="gap:9px"><span style="font-size:20px">🔥</span>
+          <div><b style="font-size:14px">하루 권장 칼로리 약 ${dailyKcal({kg:Number(f.kg),species:f.species,ageM:Number(f.ageM||24),neutered:f.neutered,concerns:f.concerns})}kcal</b>
+          <p class="tiny muted" style="margin-top:2px">체중·생애주기·중성화 여부로 계산한 참고값입니다</p></div></div>
+      </div>`:''}
+    </div>`;
+
+    if (f.step===4) return `<div class="pad">
+      <h2 style="font-size:21px;font-weight:800;letter-spacing:-.6px;line-height:1.4">피해야 할 성분이 있나요?</h2>
+      <p class="small muted" style="margin-top:6px">선택한 성분이 들어간 상품은 추천에서 걸러지고 상세 화면에 경고가 표시됩니다</p>
+      ${an('문제1 — 개인화 기준', true)}
+      <div class="chip-wrap" style="margin-top:18px">
+        ${ALLERGENS.map(a=>`<button class="chip brand ${f.allergies.includes(a)?'on':''}" onclick="toggleIn('allergies','${a}')">${a}</button>`).join('')}
+      </div>
+      <div class="notice notice-warn" style="margin-top:18px">${ic('alert')}
+        <span>알레르기 진단은 병원 검사로 확인하는 것이 정확합니다. 여기 입력한 값은 상품 필터링 용도로만 쓰입니다.</span></div>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="FORM.allergies=[];render()">해당 없음으로 지우기</button>
+    </div>`;
+
+    return `<div class="pad">
+      <h2 style="font-size:21px;font-weight:800;letter-spacing:-.6px;line-height:1.4">요즘 신경 쓰는 부분은요?</h2>
+      <p class="small muted" style="margin-top:6px">관심사와 관련된 상품에 가점이 붙고, 성분 해석 순서도 바뀝니다</p>
+      <div class="chip-wrap" style="margin-top:18px">
+        ${CONCERNS.map(c=>`<button class="chip brand ${f.concerns.includes(c)?'on':''}" onclick="toggleIn('concerns','${c}')">${c}</button>`).join('')}
+      </div>
+      <div class="field" style="margin-top:22px">
+        <label class="label">진료 내역 메모 <span class="badge badge-mute">선택</span></label>
+        <textarea class="input" rows="3" placeholder="예) 2025-11 피부염 진료, 닭고기 제한 권고"
+                  oninput="FORM.memo=this.value">${esc(FORM.memo)}</textarea>
+        <div class="notice notice-info" style="margin-top:9px">${ic('info')}
+          <span>진료 내역은 민감정보로 분류됩니다. 실제 서비스에서는 별도 동의·암호화 저장이 필요하며, 사진 업로드 방식은 보안 검토 후 결정됩니다.</span></div>
+      </div>
+    </div>`;
+  },
+  dock: ()=>`<div class="dockbar">
+    <button class="btn btn-primary btn-block" ${stepValid()?'':'disabled'} onclick="nextStep()">
+      ${FORM.step<STEPS?'다음':'등록 완료'}
+    </button></div>`,
+};
+function updateStage(){
+  const h = $('#stageHint'); if(!h||!FORM.ageM) return;
+  h.textContent = `${STAGE_LABEL[FORM.species][stageOf({species:FORM.species, ageM:Number(FORM.ageM)})]} 시기예요`;
+}
+
+/* -------------------------------------------- 등록 완료 → 상품 기준 정보 */
+SCREENS.petdone = {
+  title: ()=>'등록 완료',
+  appbar: ()=>null,
+  view: (p)=>{
+    const pet = S.pets.find(x=>x.id===p.id) || activePet();
+    const kcal = dailyKcal(pet);
+    const picks = recommend(pet, {limit:3});
+    return `<div class="pad" style="padding-top:26px">
+      <div style="text-align:center">
+        <div class="pet-ava lg" style="margin:0 auto">${pet.emo}</div>
+        <h2 style="font-size:21px;font-weight:800;letter-spacing:-.6px;margin-top:12px">
+          ${esc(pet.name)} 기준이 만들어졌어요</h2>
+        <p class="small muted" style="margin-top:6px">${esc(pet.breed)} · ${ageText(pet.ageM)} · ${pet.kg}kg · ${stageLabel(pet)}</p>
+      </div>
+      ${an('2.1.1-2 상품을 고를 때 기준이 되는 정보 제시', true)}
+      <div class="card" style="margin-top:20px">
+        <div class="sec-title" style="font-size:15.5px">${J(pet.name,'을를')} 위해 먼저 확인할 것</div>
+        <div style="margin-top:11px">
+          ${[
+            ['🔥','하루 권장 칼로리', `약 ${kcal}kcal — 사료 급여량의 기준값이에요`],
+            pet.allergies.length ? ['🚫','피해야 할 성분', `${pet.allergies.join(', ')} — 이 성분이 든 상품은 자동으로 걸러져요`]
+                                 : ['✅','알레르기 정보', '등록된 성분이 없어요. 이상 반응이 보이면 프로필에 추가해 주세요'],
+            pet.concerns.length ? ['🎯','중점 관리 항목', `${pet.concerns.join(', ')} — 관련 성분을 먼저 보여드려요`]
+                                : ['🎯','중점 관리 항목', '아직 없어요. 나중에 프로필에서 추가할 수 있어요'],
+            ['📊','성분 볼 때 우선순위', stageOf(pet)==='puppy' ? '단백질·DHA·칼슘 균형' : stageOf(pet)==='senior' ? '단백질 유지 · 인·나트륨 낮게' : '단백질·지방 비율과 조회분'],
+          ].map(([e,t,d])=>`
+            <div class="row" style="align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)">
+              <span style="font-size:19px;line-height:1.2">${e}</span>
+              <div style="flex:1"><b style="font-size:13.5px">${t}</b>
+                <p class="tiny muted" style="margin-top:2px;line-height:1.55">${esc(d)}</p></div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div style="margin-top:22px">
+        <div class="sec-head"><div><div class="sec-title">바로 이 상품들이에요</div>
+          <div class="sec-sub">${esc(pet.name)} 기준 맞춤 점수 상위 3개</div></div></div>
+        <div class="card" style="padding:2px 16px">${picks.map(x=>pRow(x.p, pet)).join('')}</div>
+      </div>
+      <div class="gap-b"></div>
+    </div>`;
+  },
+  dock: ()=>`<div class="dockbar" style="gap:8px">
+    <button class="btn btn-line" style="flex:1" onclick="startPetForm()">아이 더 추가</button>
+    <button class="btn btn-primary" style="flex:1.6" onclick="goTab('home')">홈으로 가기</button></div>`,
+};
+
+/* ---------------------------------------------------------------------- 홈 */
+SCREENS.home = {
+  tab:'home', title: ()=>'홈',
+  appbar: ()=>barMain('골라주개냥',
+    `<button class="iconbtn" onclick="go('notice')" style="position:relative">${ic('bell')}${pendingCheckins().length?'<span class="dot"></span>':''}</button>${barCart()}`),
+  view: ()=>{
+    const pet = activePet();
+    if (!pet) return emptyView('🐾','등록된 반려동물이 없어요',
+      '프로필을 먼저 등록하면 그 아이 기준으로 상품을 골라드려요.',
+      [['btn-primary','프로필 등록하기','startPetForm()']]);
+
+    const cold = S.orders.length === 0 || FORCE_EMPTY === 'cold';
+    const picks = recommend(pet, {limit:6});
+    const safe  = recommend(pet, {limit:4}).filter(x=>!x.s.blocked);
+    const checks = pendingCheckins();
+    const st = stageOf(pet);
+    const stageTip = {
+      puppy :'성장기에는 단백질과 DHA, 칼슘·인 균형을 먼저 봐요. 소화가 쉬운 소립 사료가 적합합니다.',
+      adult :'유지식 단계예요. 단백질·지방 비율과 조회분 수치를 함께 보면 좋습니다.',
+      senior:'근육량 유지를 위해 단백질은 유지하되, 인·나트륨은 낮은 제품이 권장됩니다.',
+    }[st];
+
+    return `
+      <div class="pad-x" style="padding-top:10px">${petHero(pet)}</div>
+
+      ${cold ? `<div class="pad-x" style="padding-top:12px">
+        <div class="notice notice-brand">${ic('info')}
+          <span><b>아직 구매 기록이 없어요.</b><br>지금은 프로필 정보만으로 추천하고 있어요. 첫 구매 이후에는 반응 기록이 함께 반영됩니다.</span></div>
+        ${an('2.2 예외 — 콜드 스타트 유저', true)}
+      </div>`:''}
+
+      ${checks.length ? `<div class="pad-x" style="padding-top:12px">
+        ${checks.slice(0,1).map(c=>checkinCard(c, pet)).join('')}
+      </div>`:''}
+
+      <div class="pad-x" style="padding-top:16px">
+        <div class="card" style="background:linear-gradient(150deg,#FFF4EE,#EFF7F6);box-shadow:none;border:1px solid #F3E0D6">
+          <div class="row" style="gap:8px;margin-bottom:7px">
+            <span class="badge badge-brand">${stageLabel(pet)} 시기</span>
+            <span class="tiny muted">${ageText(pet.ageM)}</span>
+          </div>
+          <b style="font-size:14.5px;letter-spacing:-.35px">${J(pet.name,'은는')} 지금 무엇을 봐야 할까요?</b>
+          <p class="small" style="margin-top:6px;color:var(--ink2);line-height:1.6">${stageTip}</p>
+        </div>
+        ${an('2.1.1-3 생애주기에 맞춘 정보 제시', true)}
+      </div>
+
+      <div style="padding-top:22px">
+        <div class="pad-x sec-head">
+          <div><div class="sec-title">${esc(pet.name)}에게 맞는 상품</div>
+            <div class="sec-sub">프로필 기준 맞춤 점수 순 · 알레르기 성분 제외</div></div>
+          <button class="sec-more" onclick="go('category',{cat:'food'})">전체</button>
+        </div>
+        ${an('2.1.3 상품 추천 · RICE 2순위(27)', true)}
+        <div class="hscroll">
+          ${picks.map(x=>`<div style="width:152px">${pCard(x.p, pet)}</div>`).join('')}
+        </div>
+      </div>
+
+      <div class="pad-x" style="padding-top:24px">
+        <div class="sec-head"><div><div class="sec-title">지금 비교해 볼까요?</div>
+          <div class="sec-sub">두 상품의 성분을 나란히 놓고 봅니다</div></div></div>
+        <button class="card flat row" style="width:100%;text-align:left;gap:12px" onclick="go('compare',{})">
+          <div style="font-size:26px">${picks[0]?.p.emo||'🥣'}${picks[1]?.p.emo||'🍖'}</div>
+          <div style="flex:1"><b style="font-size:14px">성분 A/B 비교하기</b>
+            <p class="tiny muted" style="margin-top:3px">${esc(pet.name)} 기준으로 어느 쪽이 나은지 표시해 드려요</p></div>
+          <span style="color:var(--ink4)">${ic('next')}</span>
+        </button>
+        ${an('2.1.5-2 성분 A/B 비교', true)}
+      </div>
+
+      <div style="padding-top:24px">
+        <div class="pad-x sec-head">
+          <div><div class="sec-title">카테고리별로 보기</div></div>
+        </div>
+        <div class="pad-x" style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px">
+          ${CATS.map(c=>`<button class="card flat" style="padding:13px 4px;text-align:center" onclick="go('category',{cat:'${c.id}'})">
+            <div style="font-size:25px;line-height:1.2">${c.emo}</div>
+            <div class="tiny" style="font-weight:700;margin-top:5px">${c.name}</div></button>`).join('')}
+        </div>
+      </div>
+
+      ${pet.allergies.length ? `
+      <div style="padding-top:24px">
+        <div class="pad-x sec-head"><div>
+          <div class="sec-title">${esc(pet.allergies.join('·'))} 없는 상품</div>
+          <div class="sec-sub">등록한 알레르기 성분을 뺀 목록이에요</div></div></div>
+        <div class="pad-x"><div class="card" style="padding:2px 16px">
+          ${safe.slice(0,3).map(x=>pRow(x.p, pet, {why:false})).join('')}</div></div>
+      </div>`:''}
+
+      <div class="pad-x" style="padding-top:24px">
+        <div class="notice notice-info">${ic('info')}
+          <span>맞춤 점수는 프로필·성분·리뷰를 조합한 참고 지표입니다. 질환이 있는 경우 수의사와 상의 후 결정하세요.</span></div>
+      </div>
+      <div class="gap-b"></div><div class="tabpad"></div>`;
+  },
+};
+
+/* --------------------------------------------------------------- 카테고리 */
+let FILTER = {cat:'food', sort:'match', price:null, safeOnly:true, stageOnly:false, brand:null};
+function setFilter(k,v){ FILTER[k]=v; render(); }
+function filteredList(){
+  const pet = activePet();
+  let list = PRODUCTS.filter(p=>p.cat===FILTER.cat);
+  if (pet) list = list.filter(p => p.species==='both' || p.species===pet.species);
+  if (pet && FILTER.safeOnly) list = list.filter(p => !p.allergens.some(a=>pet.allergies.includes(a)));
+  if (pet && FILTER.stageOnly) list = list.filter(p => p.stages.includes(stageOf(pet)));
+  if (FILTER.price==='low')  list = list.filter(p=>priceOf(p) < 30000);
+  if (FILTER.price==='mid')  list = list.filter(p=>priceOf(p)>=30000 && priceOf(p)<50000);
+  if (FILTER.price==='high') list = list.filter(p=>priceOf(p)>=50000);
+  if (FILTER.brand) list = list.filter(p=>p.brand===FILTER.brand);
+
+  const withScore = list.map(p=>({p, s: pet ? scoreProduct(p,pet) : null}));
+  const sorters = {
+    match:  (a,b)=> (b.s?.score||0) - (a.s?.score||0),
+    pop:    (a,b)=> reviewsFor(b.p.id).length - reviewsFor(a.p.id).length || b.p.rating - a.p.rating,
+    priceA: (a,b)=> priceOf(a.p) - priceOf(b.p),
+    priceD: (a,b)=> priceOf(b.p) - priceOf(a.p),
+    rate:   (a,b)=> b.p.rating - a.p.rating,
+  };
+  withScore.sort(sorters[FILTER.sort] || sorters.match);
+  return withScore;
+}
+const SORT_LABEL = {match:'맞춤 점수순', pop:'리뷰 많은순', priceA:'낮은 가격순', priceD:'높은 가격순', rate:'평점순'};
+
+SCREENS.category = {
+  tab:'category', title: ()=>'카테고리',
+  appbar: ()=>barMain('카테고리', `<button class="iconbtn" onclick="goTab('search')">${ic('search')}</button>${barCart()}`),
+  view: (p)=>{
+    if (p.cat) FILTER.cat = p.cat;
+    const pet = activePet();
+    const list = filteredList();
+    const active = FILTER.safeOnly || FILTER.stageOnly || FILTER.price || FILTER.brand;
+
+    return `
+      <div style="position:sticky;top:0;background:var(--bg);z-index:3;padding-bottom:8px;border-bottom:1px solid var(--line)">
+        <div class="chip-row" style="padding-top:8px">
+          ${CATS.map(c=>`<button class="chip brand ${FILTER.cat===c.id?'on':''}" onclick="setFilter('cat','${c.id}')">${c.emo} ${c.name}</button>`).join('')}
+        </div>
+        <div class="chip-row" style="padding-top:8px">
+          <button class="chip" onclick="sortSheet()">${ic('sort','')} ${SORT_LABEL[FILTER.sort]}</button>
+          ${pet ? `<button class="chip brand ${FILTER.safeOnly?'on':''}" onclick="setFilter('safeOnly',!FILTER.safeOnly)">
+            ${pet.allergies.length? esc(pet.allergies.join('·'))+' 제외' : '알레르기 제외'}</button>`:''}
+          ${pet ? `<button class="chip brand ${FILTER.stageOnly?'on':''}" onclick="setFilter('stageOnly',!FILTER.stageOnly)">${stageLabel(pet)} 전용</button>`:''}
+          <button class="chip brand ${FILTER.price?'on':''}" onclick="priceSheet()">${FILTER.price?{'low':'3만원 미만','mid':'3~5만원','high':'5만원 이상'}[FILTER.price]:'가격대'}</button>
+          ${FILTER.brand?`<button class="chip brand on" onclick="setFilter('brand',null)">${esc(FILTER.brand)} ✕</button>`:''}
+        </div>
+      </div>
+
+      <div class="pad-x" style="padding-top:12px">
+        <div class="between" style="margin-bottom:2px">
+          <span class="small muted">${list.length}개 상품</span>
+          ${pet?`<span class="tiny muted">${esc(pet.name)} 기준</span>`:''}
+        </div>
+      </div>
+
+      ${list.length === 0 ? noMatchView(active) : `
+        <div class="pad-x"><div class="card" style="padding:2px 16px;margin-top:6px">
+          ${list.map(x=>pRow(x.p, pet)).join('')}
+        </div></div>`}
+      <div class="gap-b"></div><div class="tabpad"></div>`;
+  },
+};
+function sortSheet(){
+  openSheet(`<div class="sheet-head"><h3>정렬</h3></div><div class="sheet-body">
+    ${Object.entries(SORT_LABEL).map(([k,v])=>`
+      <button style="display:flex;width:100%;padding:14px 4px;border-bottom:1px solid var(--line);text-align:left;font-size:14.5px;font-weight:${FILTER.sort===k?'700':'500'}"
+              onclick="closeSheet();setFilter('sort','${k}')">
+        <span style="flex:1">${v}</span>${FILTER.sort===k?`<span style="color:var(--brand)">${ic('check')}</span>`:''}</button>`).join('')}
+    <div style="height:12px"></div></div>`);
+}
+function priceSheet(){
+  const opts = [[null,'전체'],['low','3만원 미만'],['mid','3만원 ~ 5만원'],['high','5만원 이상']];
+  openSheet(`<div class="sheet-head"><h3>가격대</h3></div><div class="sheet-body">
+    ${opts.map(([k,v])=>`<button style="display:flex;width:100%;padding:14px 4px;border-bottom:1px solid var(--line);text-align:left;font-size:14.5px"
+      onclick="closeSheet();setFilter('price',${k?`'${k}'`:'null'})"><span style="flex:1">${v}</span>
+      ${FILTER.price===k?`<span style="color:var(--brand)">${ic('check')}</span>`:''}</button>`).join('')}
+    <div style="height:12px"></div></div>`);
+}
+
+/* 예외 — 조건에 맞는 상품이 없는 경우 (2.2 예외 케이스) */
+function noMatchView(hasFilter){
+  const pet = activePet();
+  return `<div class="pad-x">
+    <div class="card" style="margin-top:10px">
+      <div class="empty" style="padding:30px 6px">
+        <span class="emo">🔍</span>
+        <h3>조건에 맞는 상품이 없어요</h3>
+        <p>${pet?`${esc(pet.name)}의 조건(${[pet.allergies.length?esc(pet.allergies.join('·'))+' 제외':'', FILTER.stageOnly?stageLabel(pet)+' 전용':''].filter(Boolean).join(', ')||'현재 필터'})에<br>맞는 상품이 아직 준비되지 않았어요.`:'현재 필터에 맞는 상품이 없어요.'}</p>
+        <div class="acts">
+          ${hasFilter?`<button class="btn btn-primary btn-block" onclick="relaxFilter()">조건을 조금 넓혀서 보기</button>`:''}
+          <button class="btn btn-line btn-block" onclick="setFilter('cat','food')">다른 카테고리 보기</button>
+          <button class="btn btn-ghost btn-block" onclick="toast('입고 알림을 신청했어요')">입고되면 알림 받기</button>
+        </div>
+      </div>
+    </div>
+    ${an('2.2 예외 — 프로필과 맞는 상품이 없는 경우', true)}
+    ${pet ? `<div style="margin-top:14px">
+      <div class="sec-head"><div><div class="sec-title" style="font-size:15px">비슷한 조건으로 넓혀 본 결과</div>
+        <div class="sec-sub">생애주기·체중대가 가까운 상품이에요</div></div></div>
+      <div class="card" style="padding:2px 16px">
+        ${recommend(pet,{limit:3, includeBlocked:true}).map(x=>pRow(x.p,pet)).join('') || '<p class="small muted" style="padding:14px 0">표시할 상품이 없습니다.</p>'}
+      </div></div>`:''}
+  </div>`;
+}
+function relaxFilter(){ FILTER.stageOnly=false; FILTER.price=null; FILTER.brand=null; render(); toast('생애주기·가격 조건을 해제했어요'); }
+
+/* ------------------------------------------------------------------- 검색 */
+let SEARCH = {q:'', parsed:null, submitted:false};
+const NL_EXAMPLES = [
+  '닭고기 안 들어간 소형견 사료',
+  '눈물자국 줄이는 데 좋은 사료',
+  '노령견 관절에 좋은 영양제',
+  '헤어볼 잘 나오는 고양이 사료',
+];
+const RECENT_Q = ['그레인프리','오리 사료','덴탈껌','유산균'];
+
+/* 자연어 문장에서 조건을 뽑아내는 간이 파서 (실제 서비스에서는 AI 파트가 담당) */
+function parseNL(q){
+  const out = {exclude:[], cat:null, concerns:[], stage:null, species:null};
+  ALLERGENS.forEach(a=>{ if (new RegExp(a+'\\s*(안|없|빼|제외|프리)').test(q)) out.exclude.push(a); });
+  CATS.forEach(c=>{ if (q.includes(c.name)) out.cat = c.id; });
+  if (/영양제|보조제/.test(q)) out.cat='supp';
+  CONCERNS.forEach(c=>{ const k=c.split('/')[0]; if (q.includes(k)) out.concerns.push(c); });
+  if (/눈물/.test(q)) out.concerns.push('눈물자국');
+  if (/헤어볼|털|모질/.test(q)) out.concerns.push('소화');
+  if (/노령|시니어|노견/.test(q)) out.stage='senior';
+  if (/퍼피|자견|아기|새끼|키튼/.test(q)) out.stage='puppy';
+  if (/고양이|캣|묘/.test(q)) out.species='cat';
+  if (/강아지|개|견/.test(q)) out.species = out.species || 'dog';
+  out.concerns = [...new Set(out.concerns)];
+  return out;
+}
+function runSearch(q){
+  SEARCH.q = q; SEARCH.submitted = true;
+  SEARCH.parsed = q.length > 5 ? parseNL(q) : null;
+  render();
+}
+function searchResults(){
+  const pet = activePet(), q = SEARCH.q.trim(), nl = SEARCH.parsed;
+  let list = PRODUCTS.filter(p=>{
+    const hay = `${p.brand} ${p.name} ${p.desc} ${p.concerns.join(' ')} ${CATS.find(c=>c.id===p.cat).name}`;
+    if (nl){
+      if (nl.cat && p.cat !== nl.cat) return false;
+      if (nl.species && p.species !== 'both' && p.species !== nl.species) return false;
+      if (nl.stage && !p.stages.includes(nl.stage)) return false;
+      if (nl.exclude.some(a=>p.allergens.includes(a))) return false;
+      if (nl.concerns.length && !nl.concerns.some(c=>p.concerns.includes(c))) return false;
+      return true;
+    }
+    return q.split(/\s+/).every(t => hay.includes(t));
+  });
+  if (pet) list = list.filter(p => p.species==='both' || p.species===pet.species);
+  return list.map(p=>({p, s: pet?scoreProduct(p,pet):null}))
+             .sort((a,b)=>(b.s?.score||0)-(a.s?.score||0));
+}
+
+SCREENS.search = {
+  tab:'search', title: ()=>'검색',
+  appbar: ()=>`<div style="flex:1;position:relative;padding:0 2px">
+      <input class="input" id="qbox" style="height:42px;padding-left:38px;border-radius:99px;background:var(--surface2);border-color:transparent"
+             placeholder="상품명, 또는 문장으로 검색해 보세요" value="${esc(SEARCH.q)}"
+             onkeydown="if(event.key==='Enter'){runSearch(this.value)}">
+      <span style="position:absolute;left:14px;top:11px;color:var(--ink4);pointer-events:none">${ic('search')}</span>
+    </div>
+    ${SEARCH.submitted?`<button class="iconbtn" onclick="SEARCH={q:'',parsed:null,submitted:false};render()">${ic('close')}</button>`:''}`,
+  view: ()=>{
+    const pet = activePet();
+    if (!SEARCH.submitted) return `
+      <div class="pad">
+        <div class="card" style="background:linear-gradient(150deg,#FFF4EE,#EFF7F6);box-shadow:none;border:1px solid #F3E0D6">
+          <div class="ai-tag">${ic('spark')}문장으로 검색하기</div>
+          <p class="small" style="color:var(--ink2);line-height:1.6">
+            ${pet?`${esc(pet.name)}의 프로필을 이미 알고 있어요.`:''} 조건을 문장으로 적으면 알아서 걸러 드려요.</p>
+          <div class="chip-wrap" style="margin-top:12px">
+            ${NL_EXAMPLES.map(e=>`<button class="chip" style="background:#fff" onclick="runSearch('${e}')">${e}</button>`).join('')}
+          </div>
+        </div>
+        ${an('2.1.5-5 상품 검색 내 자연어 검색', true)}
+        <div style="margin-top:24px">
+          <div class="sec-head"><div class="sec-title" style="font-size:15px">최근 검색어</div>
+            <button class="sec-more" onclick="toast('최근 검색어를 지웠어요')">전체삭제</button></div>
+          <div class="chip-wrap">${RECENT_Q.map(q=>`<button class="chip" onclick="runSearch('${q}')">${q}</button>`).join('')}</div>
+        </div>
+        <div style="margin-top:24px">
+          <div class="sec-head"><div class="sec-title" style="font-size:15px">인기 검색어</div></div>
+          <div class="card flat" style="padding:6px 14px">
+            ${['그레인프리 사료','저알러지','덴탈 간식','오메가3','신장 케어'].map((q,i)=>`
+              <button style="display:flex;gap:11px;width:100%;padding:10px 0;text-align:left;align-items:center;border-bottom:${i<4?'1px solid var(--line)':'0'}"
+                      onclick="runSearch('${q}')">
+                <b style="color:var(--brand);width:14px;font-size:14px">${i+1}</b>
+                <span style="font-size:14px">${q}</span></button>`).join('')}
+          </div>
+        </div>
+        <div class="tabpad"></div>
+      </div>`;
+
+    const res = searchResults(), nl = SEARCH.parsed;
+    return `<div class="pad-x" style="padding-top:12px">
+      ${nl ? `<div class="card flat" style="border-color:var(--brand-line);background:var(--brand-soft)">
+        <div class="ai-tag" style="margin-bottom:8px">${ic('spark')}이렇게 이해했어요</div>
+        <div class="chip-wrap">
+          ${nl.species?`<span class="badge badge-brand">${speciesLabel(nl.species)}</span>`:''}
+          ${nl.cat?`<span class="badge badge-brand">${CATS.find(c=>c.id===nl.cat).name}</span>`:''}
+          ${nl.stage?`<span class="badge badge-brand">${STAGE_LABEL[nl.species||'dog'][nl.stage]}</span>`:''}
+          ${nl.exclude.map(a=>`<span class="badge badge-bad">${a} 제외</span>`).join('')}
+          ${nl.concerns.map(c=>`<span class="badge badge-info">${c}</span>`).join('')}
+          ${!nl.species&&!nl.cat&&!nl.stage&&!nl.exclude.length&&!nl.concerns.length?`<span class="badge badge-mute">조건을 찾지 못했어요</span>`:''}
+        </div>
+      </div>`:''}
+      <div class="between" style="margin:14px 0 2px">
+        <span class="small muted">'${esc(SEARCH.q)}' 검색 결과 ${res.length}개</span>
+        ${pet?`<span class="tiny muted">${esc(pet.name)} 기준 정렬</span>`:''}
+      </div>
+      ${res.length ? `<div class="card" style="padding:2px 16px;margin-top:6px">${res.map(x=>pRow(x.p,pet)).join('')}</div>`
+        : `<div class="card" style="margin-top:10px"><div class="empty" style="padding:30px 6px">
+            <span class="emo">🫙</span><h3>검색 결과가 없어요</h3>
+            <p>다른 단어로 찾아보거나<br>아래 조건에서 골라 보세요.</p>
+            <div class="acts">
+              <button class="btn btn-line btn-block" onclick="SEARCH={q:'',parsed:null,submitted:false};render()">검색어 지우기</button>
+              <button class="btn btn-primary btn-block" onclick="goTab('category')">카테고리에서 찾기</button>
+            </div></div></div>
+           ${an('2.2 예외 — 검색 결과 없음', true)}`}
+      <div class="gap-b"></div><div class="tabpad"></div>
+    </div>`;
+  },
+};
+
+/* --------------------------------------------------------------- 상품 상세 */
+let REVFILTER = 'similar';
+let COMPARE = {a:null, b:null};
+
+SCREENS.product = {
+  title: (p)=>product(p.id)?.name || '상품',
+  appbar: (p)=>barBack('', `<button class="iconbtn" onclick="toggleLike('${p.id}')" style="color:${S.liked.includes(p.id)?'var(--brand)':'inherit'}">${ic('heart')}</button>${barCart()}`),
+  view: (p)=>{
+    const pr = product(p.id); if (!pr) return emptyView('❓','상품을 찾을 수 없어요','','');
+    const pet = activePet();
+    const s = pet ? scoreProduct(pr, pet) : null;
+    const tab = p.tab || 'summary';
+    if (!S.recent.includes(pr.id)){ S.recent.unshift(pr.id); S.recent = S.recent.slice(0,8); save(); }
+
+    const tabBtn = (k,l)=>`<button style="flex:1;padding:12px 0;font-size:14px;font-weight:${tab===k?'800':'600'};
+      color:${tab===k?'var(--ink)':'var(--ink3)'};border-bottom:2.5px solid ${tab===k?'var(--brand)':'transparent'}"
+      onclick="go('product',{id:'${pr.id}',tab:'${k}'},true)">${l}</button>`;
+
+    return `
+      <div style="background:var(--surface2);height:220px;display:grid;place-items:center;font-size:96px;position:relative">
+        <span>${pr.emo}</span>
+        ${s && s.blocked ? `<div style="position:absolute;left:16px;bottom:14px">
+          <span class="badge badge-bad" style="font-size:12.5px;padding:6px 10px">${ic('alert')} ${esc(pet.name)} 알레르기 성분 포함</span></div>`:''}
+      </div>
+
+      <div class="pad" style="background:var(--surface)">
+        <div class="pbrand" style="font-size:12.5px">${esc(pr.brand)}</div>
+        <h2 style="font-size:19px;font-weight:800;letter-spacing:-.5px;line-height:1.4;margin-top:4px">${esc(pr.name)}</h2>
+        <div class="row" style="gap:8px;margin-top:9px;flex-wrap:wrap">${priceHTML(pr)}</div>
+        <div class="row" style="gap:7px;margin-top:9px;flex-wrap:wrap">
+          <span class="badge badge-mute">${CATS.find(c=>c.id===pr.cat).name}</span>
+          <span class="badge badge-mute">${pr.species==='both'?'강아지·고양이':speciesLabel(pr.species)}</span>
+          ${pr.stages.map(st=>`<span class="badge badge-mute">${STAGE_LABEL[pr.species==='cat'?'cat':'dog'][st]}</span>`).join('')}
+          ${pr.rating?`<span class="badge badge-mute">★ ${pr.rating.toFixed(1)}</span>`:`<span class="badge badge-info">신상품</span>`}
+        </div>
+        <p class="small" style="margin-top:11px;color:var(--ink2);line-height:1.65">${esc(pr.desc)}</p>
+      </div>
+
+      <div style="display:flex;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:3">
+        ${tabBtn('summary','한눈에')}${tabBtn('nut','성분 분석')}${tabBtn('rev',`리뷰 ${reviewsFor(pr.id).length}`)}
+      </div>
+
+      ${tab==='summary' ? summaryTab(pr, pet, s) : tab==='nut' ? nutTab(pr, pet, s) : revTab(pr, pet)}
+      <div style="height:16px"></div>`;
+  },
+  dock: (p)=>{
+    const pr = product(p.id); if(!pr) return '';
+    return `<div class="dockbar">
+      <button class="btn btn-line btn-sm" style="height:46px;width:52px;flex:none;padding:0" onclick="addCompare('${pr.id}')" title="비교하기">${ic('compare')}</button>
+      <button class="btn btn-line" style="flex:1" onclick="addCart('${pr.id}')">장바구니</button>
+      <button class="btn btn-primary" style="flex:1.4" onclick="buyNow('${pr.id}')">바로 구매</button>
+    </div>`;
+  },
+};
+function toggleLike(id){
+  const i=S.liked.indexOf(id); i<0?S.liked.push(id):S.liked.splice(i,1); save(); render();
+  toast(i<0?'찜했어요':'찜을 해제했어요');
+}
+function addCompare(id){
+  if (COMPARE.a === id || COMPARE.b === id) return toast('이미 비교 목록에 있어요');
+  if (!COMPARE.a) COMPARE.a = id;
+  else if (!COMPARE.b) COMPARE.b = id;
+  else { COMPARE.a = COMPARE.b; COMPARE.b = id; }
+  if (COMPARE.a && COMPARE.b) go('compare', {}); else toast('비교할 상품을 하나 더 골라주세요');
+}
+function buyNow(id){ addCart(id); go('checkout'); }
+
+/* 한눈에 — 맞춤 점수와 근거 (2.1.5-3) */
+function summaryTab(pr, pet, s){
+  if (!pet) return `<div class="pad">${emptyInline('🐾','프로필을 등록하면 맞춤 점수를 계산해 드려요','startPetForm()','프로필 등록하기')}</div>`;
+  const g = gramsPerDay(pet, pr);
+  return `<div class="pad">
+    ${an('2.1.5-3 제품 성분 분석 · 맞춤형 점수 표기', true)}
+    <div class="card">
+      <div class="row" style="gap:15px">
+        ${ringHTML(s.score,'lg')}
+        <div style="flex:1;min-width:0">
+          <div class="row" style="gap:6px"><div class="pet-ava sm">${pet.emo}</div>
+            <b style="font-size:13.5px">${esc(pet.name)} 기준</b></div>
+          <div style="font-size:17px;font-weight:800;letter-spacing:-.5px;margin-top:6px;color:${scoreColor(s.score)}">
+            ${scoreWord(s.score)}</div>
+          <p class="tiny muted" style="margin-top:4px;line-height:1.5">
+            ${esc(pet.breed)} · ${ageText(pet.ageM)} · ${pet.kg}kg · ${stageLabel(pet)}</p>
+        </div>
+      </div>
+
+      ${s.blocked ? `<div class="notice notice-warn" style="margin-top:14px">${ic('alert')}
+        <span><b>${esc(s.allergyHit.join(', '))}</b>${hasBatchim(s.allergyHit.join(', '))?'이':'가'} 들어 있어요. ${esc(pet.name)}의 프로필에 등록된 알레르기 성분입니다.
+        구매 전 수의사와 상의하시거나 다른 상품을 확인해 보세요.</span></div>`:''}
+
+      <div class="hr"></div>
+      <div style="font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:4px">좋은 점</div>
+      ${s.plus.length ? s.plus.map(t=>`<div class="factor plus"><span class="fi">+</span><span>${t}</span></div>`).join('')
+        : '<p class="small muted" style="padding:6px 0">특별히 가점된 항목이 없어요.</p>'}
+      <div style="font-size:13px;font-weight:800;color:var(--ink2);margin:12px 0 4px">확인할 점</div>
+      ${s.minus.length ? s.minus.map(t=>`<div class="factor minus"><span class="fi">!</span><span>${t}</span></div>`).join('')
+        : '<p class="small muted" style="padding:6px 0">확인이 필요한 항목이 없어요.</p>'}
+    </div>
+
+    ${g ? `<div class="card">
+      <div class="between"><b style="font-size:14.5px">${esc(pet.name)}의 하루 급여량</b>
+        <span class="tip" onclick="tipSheet('급여량 계산 방식','체중으로 계산한 휴식기 에너지 요구량(RER)에 생애주기·중성화·체중관리 계수를 곱해 하루 필요 칼로리를 구한 뒤, 상품의 100g당 열량으로 나눈 값입니다. 활동량과 개체 차이에 따라 달라질 수 있습니다.')">?</span></div>
+      <div class="row" style="gap:14px;margin-top:12px">
+        <div style="flex:1;background:var(--brand-soft);border-radius:12px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:var(--brand-deep);letter-spacing:-.8px">${g}g</div>
+          <div class="tiny" style="color:var(--brand-deep);font-weight:700;margin-top:2px">하루 권장량</div></div>
+        <div style="flex:1;background:var(--surface2);border-radius:12px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:800;letter-spacing:-.8px">${dailyKcal(pet)}</div>
+          <div class="tiny muted" style="font-weight:700;margin-top:2px">kcal / 일</div></div>
+      </div>
+      <p class="tiny muted" style="margin-top:10px;line-height:1.55">
+        2회 급여 시 1회 약 ${Math.round(g/2)}g. 간식은 하루 권장 칼로리의 10%(약 ${Math.round(dailyKcal(pet)*0.1)}kcal) 이내를 권장합니다.</p>
+      ${an('2.1.5-4 적정 급여량 가이드')}
+    </div>`:''}
+
+    <div class="card">
+      <b style="font-size:14.5px">이 상품과 함께 보면 좋아요</b>
+      <div style="margin-top:6px">
+        ${recommend(pet,{cat:pr.cat, limit:4}).filter(x=>x.p.id!==pr.id).slice(0,3)
+          .map(x=>pRow(x.p, pet, {why:false})).join('')}
+      </div>
+    </div>
+
+    <button class="card flat row" style="width:100%;text-align:left;gap:11px;margin-top:12px" onclick="addCompare('${pr.id}')">
+      ${ic('compare')}<div style="flex:1"><b style="font-size:14px">다른 상품과 성분 비교하기</b>
+      <p class="tiny muted" style="margin-top:2px">${esc(pet.name)} 기준으로 어느 쪽이 나은지 표시해 드려요</p></div>
+      <span style="color:var(--ink4)">${ic('next')}</span></button>
+  </div>`;
+}
+
+/* 성분 분석 탭 (2.1.5-1) */
+function nutTab(pr, pet, s){
+  const warns = pr.nut.filter(n=>n.g==='warn');
+  const key = pet ? pr.nut.filter(n => pet.concerns.some(c=>{
+    if (c==='피부/모질') return /오메가|DHA|EPA|지방/.test(n.n);
+    if (c==='신장')      return /인|나트륨|단백/.test(n.n);
+    if (c==='관절')      return /글루코사민|콘드로이틴|MSM/.test(n.n);
+    if (c==='체중관리')  return /지방|섬유|열량/.test(n.n);
+    if (c==='소화')      return /섬유|유산균|프리바이오/.test(n.n);
+    return false;
+  })) : [];
+
+  return `<div class="pad">
+    ${an('2.1.5-1 성분 해석 · 툴팁/표 · 주의 뱃지', true)}
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:12px">
+      <span class="badge badge-info">${AXES[pr.cat]}</span>
+      ${warns.length?`<span class="badge badge-warn">${ic('alert')} 확인 필요 ${warns.length}건</span>`:`<span class="badge badge-good">${ic('check')} 기준 이탈 없음</span>`}
+      ${s&&s.blocked?`<span class="badge badge-bad">알레르기 성분 포함</span>`:''}
+    </div>
+
+    ${key.length ? `<div class="card flat" style="border-color:var(--brand-line);background:var(--brand-soft);margin-bottom:12px">
+      <b style="font-size:13.5px;color:var(--brand-deep)">${J(pet.name,'이가')} 먼저 볼 항목</b>
+      <p class="tiny" style="color:var(--brand-deep);margin-top:4px;line-height:1.55">
+        프로필에 등록한 <b>${esc(pet.concerns.join(', '))}</b> 기준으로 ${key.map(n=>n.n).join(', ')} 수치를 위로 올렸어요.</p>
+    </div>`:''}
+
+    <div class="card">
+      ${[...key, ...pr.nut.filter(n=>!key.includes(n))].map(n=>`
+        <div class="nut">
+          <div class="nut-top">
+            <span class="nut-name">${esc(n.n)}
+              ${key.includes(n)?`<span class="badge badge-brand" style="padding:1px 5px;font-size:10px">주목</span>`:''}
+              <span class="tip" onclick="tipSheet('${esc(n.n)}','${esc(n.tip)}')">?</span></span>
+            <span class="nut-val" style="color:${n.g==='warn'?'var(--warn)':n.g==='bad'?'var(--bad)':n.g==='good'?'var(--good)':'var(--ink2)'}">
+              ${esc(n.v)}${esc(n.u)}</span>
+          </div>
+          <div class="bar bar-${n.g}"><i style="width:${n.p}%"></i></div>
+          <div class="between" style="margin-top:5px">
+            <span class="tiny muted">권장 ${esc(n.ref)}</span>
+            ${n.g==='warn'?`<span class="badge badge-warn">기준 이탈</span>`:n.g==='good'?`<span class="badge badge-good">양호</span>`:''}
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <div class="card flat" style="margin-top:12px">
+      <b style="font-size:13.5px">알레르기 유발 가능 성분</b>
+      <div class="chip-wrap" style="margin-top:9px">
+        ${pr.allergens.length ? pr.allergens.map(a=>`
+          <span class="badge ${pet&&pet.allergies.includes(a)?'badge-bad':'badge-mute'}">${a}${pet&&pet.allergies.includes(a)?' · 등록됨':''}</span>`).join('')
+          : '<span class="badge badge-good">표시된 주요 알레르겐 없음</span>'}
+      </div>
+      <p class="tiny muted" style="margin-top:9px;line-height:1.55">
+        원료 전체 목록이 아니라 흔한 알레르겐 기준으로 표시합니다. 교차오염 가능성은 제조사 표기를 확인하세요.</p>
+    </div>
+
+    <div class="notice notice-info" style="margin-top:12px">${ic('info')}
+      <span>성분 수치는 제조사 표기 기준이며, 해석은 일반적인 영양 가이드라인을 참고한 참고 정보입니다.</span></div>
+  </div>`;
+}
+
+/* 리뷰 탭 (2.1.2) */
+function revTab(pr, pet){
+  const all = reviewsFor(pr.id);
+  if (!all.length) return `<div class="pad">
+    <div class="card"><div class="empty" style="padding:34px 6px">
+      <span class="emo">✍️</span><h3>아직 리뷰가 없어요</h3>
+      <p>새로 들어온 상품이라 사용 후기가 없습니다.<br>성분 분석 탭에서 기준 정보를 먼저 확인해 보세요.</p>
+      <div class="acts">
+        <button class="btn btn-line btn-block" onclick="go('product',{id:'${pr.id}',tab:'nut'},true)">성분 분석 보기</button>
+      </div></div></div>
+    ${an('2.2 예외 — 리뷰가 없는 신상품', true)}</div>`;
+
+  const sim = pet ? all.filter(r=>isSimilar(r,pet)) : [];
+  const showSim = REVFILTER === 'similar' && pet;
+  const list = showSim ? sim : all;
+  const stats = reviewStats(all);
+  const ai = AI_SUMMARY[pr.id] || {pos:[],neg:[]};
+
+  return `<div class="pad">
+    ${an('2.1.2 리뷰 분석 & 리뷰 필터', true)}
+
+    <div class="ai">
+      <div class="ai-tag">${ic('spark')}AI 리뷰 요약</div>
+      ${ai.pos.length?`<div style="margin-bottom:9px"><b style="font-size:13px;color:var(--good)">좋았던 점</b>
+        ${ai.pos.map(t=>`<div class="factor plus" style="padding:5px 0"><span class="fi">+</span><span>${esc(t)}</span></div>`).join('')}</div>`:''}
+      ${ai.neg.length?`<div><b style="font-size:13px;color:var(--warn)">아쉬운 점</b>
+        ${ai.neg.map(t=>`<div class="factor minus" style="padding:5px 0"><span class="fi">!</span><span>${esc(t)}</span></div>`).join('')}</div>`:''}
+      <div class="hr" style="margin:12px 0"></div>
+      <b style="font-size:13px">반응별 통계 <span class="tiny muted" style="font-weight:600">· 리뷰 ${all.length}건 집계</span></b>
+      <div style="margin-top:7px">
+        ${stats.map(s=>`<div class="statline">
+          <span class="sl-n">${esc(s.k)}</span>
+          <div class="bar ${s.pct>=70?'bar-good':s.pct>=40?'bar-warn':'bar-bad'}"><i style="width:${s.pct}%"></i></div>
+          <span class="sl-v" style="color:${s.pct>=70?'var(--good)':s.pct>=40?'var(--warn)':'var(--bad)'}">${s.pct}%</span>
+        </div>`).join('')}
+      </div>
+      <p class="tiny muted" style="margin-top:8px;line-height:1.5">
+        통계는 리뷰에 달린 반응 태그를 집계한 값이고, 요약 문장은 AI가 정리한 내용입니다.</p>
+    </div>
+
+    ${pet?`<div class="chip-row" style="padding:14px 0 4px;margin:0 -16px">
+      <div style="width:16px;flex:none"></div>
+      <button class="chip brand ${showSim?'on':''}" onclick="REVFILTER='similar';render()">
+        ${pet.emo} ${J(pet.name,'과와')} 비슷한 조건 ${sim.length}</button>
+      <button class="chip brand ${!showSim?'on':''}" onclick="REVFILTER='all';render()">전체 ${all.length}</button>
+      <div style="width:16px;flex:none"></div>
+    </div>`:''}
+
+    ${showSim && sim.length===0 ? `
+      <div class="card" style="margin-top:12px"><div class="empty" style="padding:30px 6px">
+        <span class="emo">🔎</span>
+        <h3>${J(pet.name,'과와')} 비슷한 조건의 리뷰가 없어요</h3>
+        <p>이 상품은 주로 <b>${summarizeReviewerPets(all)}</b> 보호자가 남겼어요.<br>
+           ${esc(pet.name)}(${stageLabel(pet)} · ${pet.kg}kg)와는 조건이 달라 그대로 적용하기 어려울 수 있습니다.</p>
+        <div class="acts">
+          <button class="btn btn-primary btn-block" onclick="REVFILTER='all';render()">조건을 넓혀 전체 리뷰 보기</button>
+          <button class="btn btn-line btn-block" onclick="go('product',{id:'${pr.id}',tab:'nut'},true)">대신 성분으로 판단하기</button>
+          <button class="btn btn-ghost btn-block" onclick="toast('체험단 알림을 신청했어요')">비슷한 조건 체험단 신청하기</button>
+        </div></div></div>
+      ${an('2.2 예외 — 프로필과 맞는 리뷰가 없는 경우', true)}`
+    : `<div class="card" style="margin-top:12px;padding:2px 16px">
+        ${list.map(r=>reviewCard(r, pet)).join('')}
+      </div>
+      ${showSim?`<p class="tiny muted" style="margin-top:10px;text-align:center;line-height:1.55">
+        종·생애주기·체중대(±35%)·건강 관심사를 기준으로 걸러낸 리뷰입니다</p>`:''}`}
+  </div>`;
+}
+function summarizeReviewerPets(list){
+  const stagesSet = [...new Set(list.map(r=>STAGE_LABEL[r.pet.species][stageOf({species:r.pet.species,ageM:r.pet.ageM})]))];
+  const avg = list.reduce((a,r)=>a+r.pet.kg,0)/list.length;
+  return `${stagesSet.join('·')} / 평균 ${avg.toFixed(1)}kg`;
+}
+function reviewCard(r, pet){
+  const sim = pet && isSimilar(r, pet);
+  const rs  = STAGE_LABEL[r.pet.species][stageOf({species:r.pet.species, ageM:r.pet.ageM})];
+  return `<div class="rev">
+    <div class="rev-head">
+      <div class="pet-ava sm" style="${sim?'border-color:var(--brand)':''}">${r.pet.species==='cat'?'🐱':'🐶'}</div>
+      <div class="rev-meta">
+        <div class="row" style="gap:5px">
+          <span class="rev-pet">${esc(r.pet.name)}</span>
+          ${sim?`<span class="badge badge-brand" style="padding:1px 5px;font-size:10px">비슷한 조건</span>`:''}
+        </div>
+        <div class="rev-cond">${esc(r.pet.breed)} · ${rs} · ${r.pet.kg}kg${r.pet.concerns.length?' · '+esc(r.pet.concerns.join(', ')):''}</div>
+      </div>
+      <span class="stars">${stars(r.rating)}</span>
+    </div>
+    <p class="rev-body">${esc(r.text)}</p>
+    <div class="trust">
+      <span class="badge badge-mute">${ic('clock')} 사용 ${r.days}일차</span>
+      <span class="badge badge-mute">${r.buys}번째 구매</span>
+      <span class="badge badge-good">${ic('check')} 구매 확인</span>
+    </div>
+    <div class="rev-tags">
+      ${r.tags.map(([k,g])=>`<span class="badge ${g==='good'?'badge-good':'badge-warn'}">${k} ${g==='good'?'좋음':'아쉬움'}</span>`).join('')}
+    </div>
+    ${an('2.1.2-3 구매횟수·사용기간 표시 (사용기간 산정 방식은 백엔드 확인 필요)')}
+  </div>`;
+}
+
+/* ------------------------------------------------------------- A/B 비교 */
+SCREENS.compare = {
+  title: ()=>'성분 비교',
+  appbar: ()=>barBack('성분 비교'),
+  view: ()=>{
+    const pet = activePet();
+    const a = COMPARE.a && product(COMPARE.a), b = COMPARE.b && product(COMPARE.b);
+    if (!a || !b) return `<div class="pad">
+      <div class="card"><div class="empty" style="padding:26px 6px">
+        <span class="emo">⚖️</span>
+        <h3>비교할 상품을 두 개 골라주세요</h3>
+        <p>상품 상세 화면에서 비교 버튼을 누르면 여기에 담깁니다.</p></div></div>
+      <div class="sec-head" style="margin-top:18px"><div><div class="sec-title" style="font-size:15px">추천 조합</div>
+        <div class="sec-sub">${pet?esc(pet.name)+' 기준 상위 상품이에요':'인기 상품이에요'}</div></div></div>
+      <div class="card" style="padding:2px 16px">
+        ${(pet?recommend(pet,{cat:'food',limit:4}):PRODUCTS.slice(0,4).map(p=>({p,s:null}))).map(x=>`
+          <button class="plist" onclick="addCompare('${x.p.id}')">
+            <div class="thumb" style="width:56px;height:56px;font-size:26px"><span>${x.p.emo}</span></div>
+            <div class="info"><div class="pbrand">${esc(x.p.brand)}</div>
+              <div class="pname">${esc(x.p.name)}</div></div>
+            <span class="btn btn-sm btn-soft" style="align-self:center;pointer-events:none">
+              ${COMPARE.a===x.p.id||COMPARE.b===x.p.id?'담김':'담기'}</span>
+          </button>`).join('')}
+      </div></div>`;
+
+    const sa = pet?scoreProduct(a,pet):null, sb = pet?scoreProduct(b,pet):null;
+    const cell = (p,s)=>`<div style="flex:1;min-width:0;text-align:center">
+      <div class="thumb" style="width:100%;aspect-ratio:1;font-size:40px;margin-bottom:8px"><span>${p.emo}</span></div>
+      <div class="pbrand">${esc(p.brand)}</div>
+      <div class="pname" style="font-size:13px;-webkit-line-clamp:2">${esc(p.name)}</div>
+      <div style="margin-top:7px;display:grid;place-items:center">${s?ringHTML(s.score,'sm'):''}</div>
+      <div style="font-weight:800;font-size:14px;margin-top:7px;letter-spacing:-.4px">${money(priceOf(p))}원</div>
+    </div>`;
+
+    /* 두 상품의 공통 성분 항목만 나란히 비교합니다 */
+    const keys = a.nut.map(n=>n.n).filter(n=> b.nut.some(m=>m.n===n));
+    const rank = {good:3, mute:2, warn:1, bad:0};
+
+    return `<div class="pad">
+      ${an('2.1.5-2 제품/성분 A/B 비교', true)}
+      <div class="card">
+        <div class="row" style="align-items:flex-start;gap:10px">
+          ${cell(a,sa)}
+          <div style="width:26px;flex:none;display:grid;place-items:center;padding-top:52px;
+                      font-size:12px;font-weight:800;color:var(--ink4)">VS</div>
+          ${cell(b,sb)}
+        </div>
+        ${sa&&sb?`<div class="notice ${sa.score>=sb.score?'notice-brand':'notice-brand'}" style="margin-top:14px">${ic('spark')}
+          <span><b>${esc(pet.name)} 기준으로는 ${J((sa.score>=sb.score?a:b).name,'이가')} ${Math.abs(sa.score-sb.score)}점 앞서요.</b><br>
+          ${esc(((sa.score>=sb.score?sa:sb).plus[0]||'').replace(/<\/?b>/g,''))}</span></div>`:''}
+      </div>
+
+      ${(sa&&sa.blocked)||(sb&&sb.blocked)?`<div class="notice notice-warn" style="margin-top:12px">${ic('alert')}
+        <span>${[sa&&sa.blocked?esc(a.name):null, sb&&sb.blocked?esc(b.name):null].filter(Boolean).join(', ')}에
+        ${esc(pet.name)}의 알레르기 성분이 들어 있어요.</span></div>`:''}
+
+      <div class="card" style="margin-top:12px">
+        <b style="font-size:14.5px">${AXES[a.cat]===AXES[b.cat]?AXES[a.cat]:'항목별 비교'}</b>
+        <div style="margin-top:10px">
+          ${keys.length===0?`<p class="small muted" style="padding:10px 0">
+            카테고리가 서로 달라 나란히 비교할 공통 항목이 없어요. 같은 종류의 상품끼리 비교해 주세요.</p>`:
+          keys.map(k=>{
+            const na = a.nut.find(n=>n.n===k), nb = b.nut.find(n=>n.n===k);
+            const wa = rank[na.g] > rank[nb.g], wb = rank[nb.g] > rank[na.g];
+            const box = (n,win)=>`<div style="flex:1;text-align:center;padding:9px 6px;border-radius:10px;
+              background:${win?'var(--good-soft)':'var(--surface2)'};border:1px solid ${win?'var(--good-line)':'transparent'}">
+              <div style="font-size:14.5px;font-weight:800;letter-spacing:-.4px;color:${win?'var(--good)':'var(--ink)'}">${esc(n.v)}${esc(n.u)}</div>
+              ${win?`<div class="tiny" style="color:var(--good);font-weight:700;margin-top:2px">우세</div>`:
+                    `<div class="tiny muted" style="margin-top:2px">${n.g==='warn'?'기준 이탈':'&nbsp;'}</div>`}</div>`;
+            return `<div style="padding:9px 0;border-bottom:1px solid var(--line)">
+              <div class="row" style="justify-content:center;gap:5px;margin-bottom:7px">
+                <span style="font-size:12.5px;font-weight:700;color:var(--ink2)">${esc(k)}</span>
+                <span class="tip" onclick="tipSheet('${esc(k)}','${esc(na.tip)}')">?</span>
+              </div>
+              <div class="row" style="gap:8px">${box(na,wa)}${box(nb,wb)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      ${pet && a.kcal && b.kcal ? `<div class="card">
+        <b style="font-size:14.5px">${esc(pet.name)} 기준 하루 급여량 · 한 달 비용</b>
+        <div class="row" style="gap:8px;margin-top:11px">
+          ${[a,b].map(p=>{
+            const g = gramsPerDay(pet,p);
+            const monthly = Math.round(priceOf(p) / 2000 * g * 30);
+            return `<div style="flex:1;text-align:center;background:var(--surface2);border-radius:10px;padding:11px 6px">
+              <div style="font-size:16px;font-weight:800;letter-spacing:-.5px">${g}g</div>
+              <div class="tiny muted" style="margin-top:2px">하루</div>
+              <div style="font-size:13px;font-weight:700;margin-top:7px">약 ${money(monthly)}원</div>
+              <div class="tiny muted">월 예상 (2kg 기준)</div></div>`;
+          }).join('')}
+        </div>
+      </div>`:''}
+      <div class="gap-b"></div>
+    </div>`;
+  },
+  dock: ()=>{
+    if (!COMPARE.a || !COMPARE.b) return '';
+    return `<div class="dockbar">
+      <button class="btn btn-line" style="flex:1" onclick="COMPARE={a:null,b:null};render()">비우기</button>
+      <button class="btn btn-primary" style="flex:1.4" onclick="addCart('${COMPARE.a}');addCart('${COMPARE.b}')">둘 다 장바구니</button></div>`;
+  },
+};
+
+/* ------------------------------------------------------------- 빈 상태 뷰 */
+function emptyView(emo, title, desc, acts=[]){
+  return `<div class="empty" style="padding-top:80px">
+    <span class="emo">${emo}</span><h3>${title}</h3><p>${desc}</p>
+    ${acts.length?`<div class="acts">${acts.map(([cls,label,fn])=>`
+      <button class="btn ${cls} btn-block" onclick="${fn}">${label}</button>`).join('')}</div>`:''}
+  </div>`;
+}
+function emptyInline(emo, title, fn, label){
+  return `<div class="card"><div class="empty" style="padding:26px 6px">
+    <span class="emo">${emo}</span><h3 style="font-size:15px">${title}</h3>
+    <div class="acts"><button class="btn btn-primary btn-block" onclick="${fn}">${label}</button></div>
+  </div></div>`;
+}
+
+/* ------------------------------------------------------------- 장바구니 */
+SCREENS.cart = {
+  tab:'cart', title: ()=>'장바구니',
+  appbar: ()=>barMain('장바구니'),
+  view: ()=>{
+    if (FORCE_EMPTY==='cart' || !S.cart.length) return emptyView('🛒','장바구니가 비어 있어요',
+      '우리 아이에게 맞는 상품을 먼저 찾아볼까요?',
+      [['btn-primary','맞춤 추천 보러 가기','goTab(\'home\')'],['btn-line','카테고리 둘러보기','goTab(\'category\')']])
+      + an('2.2 예외 — 빈 장바구니', true);
+
+    const pet = activePet();
+    const total = cartTotal();
+    const ship = total >= 30000 ? 0 : 3000;
+    return `<div class="pad-x" style="padding-top:12px">
+      <div class="card" style="padding:2px 16px">
+        ${S.cart.map(c=>{
+          const p = product(c.pid); const s = pet?scoreProduct(p,pet):null;
+          return `<div class="plist" style="align-items:flex-start">
+            <div class="thumb" style="width:70px;height:70px;font-size:30px" onclick="go('product',{id:'${p.id}'})"><span>${p.emo}</span></div>
+            <div class="info">
+              <div class="between"><div class="pbrand">${esc(p.brand)}</div>
+                <button class="iconbtn" style="width:26px;height:26px;color:var(--ink4)" onclick="removeCart('${p.id}')">${ic('trash')}</button></div>
+              <div class="pname">${esc(p.name)}</div>
+              ${s&&s.blocked?`<div style="margin-top:4px"><span class="badge badge-bad">${esc(s.allergyHit.join(', '))} 포함</span></div>`:''}
+              <div class="between" style="margin-top:7px">
+                <b style="font-size:15px;letter-spacing:-.4px">${money(priceOf(p)*c.qty)}원</b>
+                <div class="stepper">
+                  <button onclick="setQty('${p.id}',-1)">−</button><span>${c.qty}</span>
+                  <button onclick="setQty('${p.id}',1)">+</button></div>
+              </div>
+              ${['food','treat','supp'].includes(p.cat) && S.pets.length>1 ? `
+                <button class="btn btn-sm btn-line" style="margin-top:9px;width:100%" onclick="whoEatsSheet('${p.id}')">
+                  🍽 누가 먹나요? · ${c.forPets.map(id=>esc(S.pets.find(x=>x.id===id)?.name||'')).filter(Boolean).join(', ')||'선택하기'}</button>
+                ${an('2.1.1-4b 복수 반려동물 선택')}`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="between" style="padding:5px 0"><span class="small muted">상품 금액</span><b>${money(total)}원</b></div>
+        <div class="between" style="padding:5px 0"><span class="small muted">배송비</span>
+          <b>${ship?money(ship)+'원':'무료'}</b></div>
+        ${ship?`<p class="tiny muted" style="margin-top:2px">${money(30000-total)}원 더 담으면 무료배송이에요</p>`:''}
+        <div class="hr" style="margin:11px 0"></div>
+        <div class="between"><b style="font-size:15px">결제 예정 금액</b>
+          <b style="font-size:19px;letter-spacing:-.6px;color:var(--brand-deep)">${money(total+ship)}원</b></div>
+      </div>
+      <div class="gap-b"></div><div class="tabpad"></div>
+    </div>`;
+  },
+  dock: ()=> S.cart.length ? `<div class="dockbar">
+    <button class="btn btn-primary btn-block" onclick="go('checkout')">
+      ${money(cartTotal() + (cartTotal()>=30000?0:3000))}원 주문하기</button></div>` : '',
+};
+function whoEatsSheet(pid){
+  const line = S.cart.find(c=>c.pid===pid);
+  openSheet(`<div class="sheet-head"><h3>누가 먹나요?</h3>
+      <p class="small muted" style="margin-top:3px">여러 마리가 나눠 먹는다면 모두 선택해 주세요. 구매 후 체크 알림이 아이별로 연결됩니다.</p></div>
+    <div class="sheet-body">
+      ${S.pets.map(p=>`
+        <button style="display:flex;gap:11px;align-items:center;width:100%;padding:13px 4px;border-bottom:1px solid var(--line);text-align:left"
+                onclick="toggleEater('${pid}','${p.id}')">
+          <div class="pet-ava">${p.emo}</div>
+          <div style="flex:1"><b style="font-size:14.5px">${esc(p.name)}</b>
+            <div class="tiny muted">${esc(p.breed)} · ${p.kg}kg</div></div>
+          <span style="color:${line.forPets.includes(p.id)?'var(--brand)':'var(--line2)'}">${ic('check')}</span>
+        </button>`).join('')}
+      <div class="notice notice-info" style="margin:12px 0">${ic('info')}
+        <span>여러 마리를 선택하면 체크 알림을 아이별로 보낼지, 하나로 묶어 보낼지 정책 확인이 필요합니다. (백엔드 확인 항목)</span></div>
+    </div>
+    <div class="sheet-foot"><button class="btn btn-dark btn-block" onclick="closeSheet();render()">완료</button></div>`);
+}
+function toggleEater(pid, petId){
+  const line = S.cart.find(c=>c.pid===pid); if(!line) return;
+  const i = line.forPets.indexOf(petId);
+  i<0 ? line.forPets.push(petId) : line.forPets.splice(i,1);
+  save(); whoEatsSheet(pid);
+}
+
+/* ----------------------------------------------------------------- 결제 */
+let PAY = {method:'card1', addr:'서울 강남구 테헤란로 123, 4층'};
+SCREENS.checkout = {
+  title: ()=>'주문/결제',
+  appbar: ()=>barBack('주문/결제'),
+  view: ()=>{
+    const total = cartTotal(), ship = total>=30000?0:3000;
+    const methods = [
+      ['card1','💳','신한카드 ****1234','등록된 결제 수단'],
+      ['kakao','💛','카카오페이',''],
+      ['naver','💚','네이버페이',''],
+      ['bank','🏦','계좌이체',''],
+    ];
+    return `<div class="pad">
+      <div class="card">
+        <div class="between"><b style="font-size:14.5px">배송지</b>
+          <button class="btn btn-sm btn-line" onclick="toast('배송지 변경은 프로토타입 범위 밖입니다')">변경</button></div>
+        <p class="small" style="margin-top:8px;color:var(--ink2);line-height:1.6">
+          김동찬 · 010-0000-0000<br>${esc(PAY.addr)}</p>
+        <input class="input" style="height:42px;margin-top:9px;font-size:13.5px" placeholder="배송 요청사항 (예: 문 앞에 놓아주세요)">
+      </div>
+
+      <div class="card">
+        <b style="font-size:14.5px">주문 상품 ${S.cart.length}건</b>
+        <div style="margin-top:4px">
+          ${S.cart.map(c=>{const p=product(c.pid);return `
+            <div class="row" style="padding:9px 0;border-bottom:1px solid var(--line);gap:10px">
+              <div class="thumb" style="width:44px;height:44px;font-size:20px"><span>${p.emo}</span></div>
+              <div style="flex:1;min-width:0">
+                <div class="pname" style="font-size:13.5px;-webkit-line-clamp:1">${esc(p.name)}</div>
+                <div class="tiny muted" style="margin-top:2px">
+                  ${c.qty}개${c.forPets.length?' · '+c.forPets.map(id=>esc(S.pets.find(x=>x.id===id)?.name||'')).filter(Boolean).join(', '):''}</div>
+              </div>
+              <b style="font-size:13.5px">${money(priceOf(p)*c.qty)}원</b>
+            </div>`;}).join('')}
+        </div>
+      </div>
+
+      <div class="card">
+        <b style="font-size:14.5px">결제 수단</b>
+        <div style="margin-top:8px">
+          ${methods.map(([k,e,n,tag])=>`
+            <button style="display:flex;gap:10px;align-items:center;width:100%;padding:12px 2px;border-bottom:1px solid var(--line);text-align:left"
+                    onclick="PAY.method='${k}';render()">
+              <span style="font-size:19px">${e}</span>
+              <div style="flex:1"><b style="font-size:14px">${n}</b>
+                ${tag?`<div class="tiny muted" style="margin-top:1px">${tag}</div>`:''}</div>
+              <span style="color:${PAY.method===k?'var(--brand)':'var(--line2)'}">${ic('check')}</span>
+            </button>`).join('')}
+        </div>
+        <p class="tiny muted" style="margin-top:9px;line-height:1.55">
+          · 백엔드 확인 항목: 결제 수단 사전 등록 지원 여부, 결제 시점의 수단 변경 허용 여부 (PG 표준 연동 기준)</p>
+        ${an('BE 이슈 — 결제 수단 등록/선택 정책', true)}
+      </div>
+
+      <div class="card">
+        <div class="between" style="padding:4px 0"><span class="small muted">상품 금액</span><b>${money(total)}원</b></div>
+        <div class="between" style="padding:4px 0"><span class="small muted">배송비</span><b>${ship?money(ship)+'원':'무료'}</b></div>
+        <div class="hr" style="margin:10px 0"></div>
+        <div class="between"><b>총 결제 금액</b>
+          <b style="font-size:19px;letter-spacing:-.6px;color:var(--brand-deep)">${money(total+ship)}원</b></div>
+      </div>
+      <div class="gap-b"></div>
+    </div>`;
+  },
+  dock: ()=>`<div class="dockbar">
+    <button class="btn btn-primary btn-block" onclick="placeOrder()">
+      ${money(cartTotal()+(cartTotal()>=30000?0:3000))}원 결제하기</button></div>`,
+};
+function placeOrder(){
+  const total = cartTotal(), ship = total>=30000?0:3000;
+  const o = {
+    id:'o'+uid(), at:Date.now(), daysAgo:0, total: total+ship, status:'결제 완료',
+    items: S.cart.map(c=>({pid:c.pid, qty:c.qty, forPets:[...c.forPets]})),
+  };
+  S.orders.unshift(o); S.cart = []; save();
+  go('orderdone', {id:o.id}, true);
+}
+
+SCREENS.orderdone = {
+  title: ()=>'주문 완료',
+  appbar: ()=>null,
+  view: (p)=>{
+    const o = S.orders.find(x=>x.id===p.id) || S.orders[0];
+    const pet = activePet();
+    const checkables = o.items.map(i=>product(i.pid)).filter(pr=>['food','treat','supp'].includes(pr.cat));
+    return `<div class="pad" style="padding-top:36px;text-align:center">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--good-soft);color:var(--good);
+                  display:grid;place-items:center;margin:0 auto">${ic('check','big')}</div>
+      <h2 style="font-size:21px;font-weight:800;letter-spacing:-.6px;margin-top:14px">주문이 완료됐어요</h2>
+      <p class="small muted" style="margin-top:6px">주문번호 ${o.id.toUpperCase()} · ${money(o.total)}원</p>
+
+      ${checkables.length?`
+      <div class="card" style="margin-top:24px;text-align:left">
+        <div class="row" style="gap:8px"><span style="font-size:20px">🔔</span>
+          <b style="font-size:14.5px">여기서 끝이 아니에요</b></div>
+        <p class="small" style="margin-top:8px;color:var(--ink2);line-height:1.65">
+          ${esc(pet?.name||'아이')}에게 실제로 잘 맞았는지는 시간이 지나야 알 수 있어요.
+          상품 종류에 맞춰 <b>7일 · 14일 · 30일</b>에 체크 알림을 보내 드릴게요.</p>
+        <div class="chip-wrap" style="margin-top:11px">
+          ${checkables.map(pr=>`<span class="badge badge-brand">${pr.emo} ${esc(pr.name)}</span>`).join('')}
+        </div>
+        <div class="notice notice-info" style="margin-top:11px">${ic('info')}
+          <span>정확한 판단을 위해 새 사료를 시작할 때는 다른 간식을 잠시 멈춰 보세요. 변화의 원인을 좁히는 데 도움이 됩니다.</span></div>
+        ${an('2.1.4 구입 이후 체크 · 인과 판단 가이드', true)}
+      </div>`:''}
+      <div class="gap-b"></div>
+    </div>`;
+  },
+  dock: (p)=>`<div class="dockbar" style="gap:8px">
+    <button class="btn btn-line" style="flex:1" onclick="HIST.length=0;go('orders')">주문 내역</button>
+    <button class="btn btn-primary" style="flex:1.4" onclick="goTab('home')">홈으로</button></div>`,
+};
+
+/* ------------------------------------------------------------- 주문 내역 */
+SCREENS.orders = {
+  title: ()=>'주문 내역',
+  appbar: ()=>barBack('주문 내역'),
+  view: ()=>{
+    if (FORCE_EMPTY==='orders' || !S.orders.length) return emptyView('📦','주문 내역이 없어요',
+      '첫 구매 이후에는 반응 기록이 추천에 함께 반영됩니다.',
+      [['btn-primary','상품 보러 가기','goTab(\'home\')']]) + an('2.2 예외 — 주문 내역 없음', true);
+    return `<div class="pad">
+      ${S.orders.map(o=>`
+        <div class="card">
+          <div class="between">
+            <div><b style="font-size:14px">${new Date(o.at - o.daysAgo*864e5).toLocaleDateString('ko-KR')}</b>
+              <div class="tiny muted" style="margin-top:2px">${o.id.toUpperCase()}</div></div>
+            <span class="badge ${o.daysAgo>=3?'badge-good':'badge-info'}">${o.daysAgo>=3?'배송 완료':o.daysAgo>=1?'배송 중':'결제 완료'}</span>
+          </div>
+          <div class="hr" style="margin:11px 0"></div>
+          ${o.items.map(i=>{const p=product(i.pid);return `
+            <button class="row" style="width:100%;text-align:left;gap:10px;padding:7px 0" onclick="go('product',{id:'${p.id}'})">
+              <div class="thumb" style="width:48px;height:48px;font-size:22px"><span>${p.emo}</span></div>
+              <div style="flex:1;min-width:0">
+                <div class="pname" style="font-size:13.5px;-webkit-line-clamp:1">${esc(p.name)}</div>
+                <div class="tiny muted" style="margin-top:2px">${i.qty}개${i.forPets.length?' · '+i.forPets.map(id=>esc(S.pets.find(x=>x.id===id)?.name||'')).filter(Boolean).join(', '):''}</div>
+              </div>
+              <span style="color:var(--ink4)">${ic('next')}</span></button>`;}).join('')}
+          <div class="row" style="gap:7px;margin-top:11px">
+            <button class="btn btn-sm btn-line" style="flex:1" onclick="o_reorder('${o.id}')">재구매</button>
+            <button class="btn btn-sm btn-line" style="flex:1" onclick="toast('교환·반품 접수는 프로토타입 범위 밖입니다')">교환·반품</button>
+          </div>
+        </div>`).join('')}
+      <div class="gap-b"></div>
+    </div>`;
+  },
+};
+function o_reorder(oid){
+  const o = S.orders.find(x=>x.id===oid); if(!o) return;
+  o.items.forEach(i=>addCart(i.pid, i.qty, i.forPets));
+  go('cart');
+}
+
+/* ------------------------------------- 구입 이후 체크 (2.1.4) · 알림함 */
+function pendingCheckins(){
+  const out = [];
+  S.orders.forEach(o => o.items.forEach(it => {
+    const pr = product(it.pid);
+    if (!['food','treat','supp'].includes(pr.cat)) return;
+    [7,14,30].forEach(d => {
+      const key = `${o.id}:${it.pid}:${d}`;
+      if (S.checkins[key]) return;
+      if (o.daysAgo >= d) out.push({key, oid:o.id, pid:it.pid, day:d, petIds:it.forPets});
+    });
+  }));
+  return out.sort((a,b)=>b.day-a.day);
+}
+function checkinCard(c, pet){
+  const pr = product(c.pid);
+  const names = c.petIds.map(id=>S.pets.find(x=>x.id===id)?.name).filter(Boolean).join(', ') || pet?.name || '아이';
+  return `<button class="card" style="width:100%;text-align:left;border:1px solid var(--brand-line);background:var(--brand-soft);box-shadow:none"
+                  onclick="go('checkin',{key:'${c.key}'})">
+    <div class="row" style="gap:9px">
+      <span style="font-size:20px">🔔</span>
+      <div style="flex:1;min-width:0">
+        <b style="font-size:14px;color:var(--brand-deep)">${c.day}일차 체크</b>
+        <p class="small" style="margin-top:4px;color:var(--brand-deep);line-height:1.55">
+          ${esc(pr.name)}, <b>${esc(names)}</b>에게 잘 맞았나요?</p>
+      </div>
+      <span style="color:var(--brand-deep)">${ic('next')}</span>
+    </div>
+  </button>`;
+}
+
+SCREENS.notice = {
+  title: ()=>'알림',
+  appbar: ()=>barBack('알림'),
+  view: ()=>{
+    const pet = activePet();
+    const list = pendingCheckins();
+    const done = Object.entries(S.checkins);
+    return `<div class="pad">
+      <div class="notice notice-info">${ic('info')}
+        <span>iOS 푸시 알림으로 전달되는 화면입니다. 알림 안에서 바로 답할 수 있도록 설계했습니다.</span></div>
+      ${an('2.1.4-1 적절한 시점(7·14·30일) 체크 알림', true)}
+
+      ${list.length ? `<div class="stack" style="margin-top:14px">${list.map(c=>checkinCard(c, pet)).join('')}</div>`
+        : `<div class="card" style="margin-top:14px"><div class="empty" style="padding:26px 6px">
+             <span class="emo">🔕</span><h3 style="font-size:15px">지금 확인할 알림이 없어요</h3>
+             <p>구매한 상품의 체크 시점이 되면 알려드릴게요.</p></div></div>`}
+
+      ${done.length?`<div style="margin-top:22px">
+        <div class="sec-head"><div class="sec-title" style="font-size:15px">지난 응답</div></div>
+        <div class="card" style="padding:2px 16px">
+          ${done.slice(-5).reverse().map(([k,v])=>{
+            const pr = product(k.split(':')[1]);
+            return `<div class="row" style="gap:10px;padding:11px 0;border-bottom:1px solid var(--line)">
+              <div class="thumb" style="width:38px;height:38px;font-size:18px"><span>${pr.emo}</span></div>
+              <div style="flex:1;min-width:0"><div class="pname" style="font-size:13px;-webkit-line-clamp:1">${esc(pr.name)}</div>
+                <div class="tiny muted" style="margin-top:2px">${k.split(':')[2]}일차</div></div>
+              <span class="badge ${v.answer==='keep'?'badge-good':v.answer==='watch'?'badge-info':'badge-warn'}">
+                ${v.answer==='keep'?'계속 먹여요':v.answer==='watch'?'관찰 중':'다른 걸 찾아요'}</span>
+            </div>`;}).join('')}
+        </div></div>`:''}
+
+      <div class="card flat" style="margin-top:22px;border-style:dashed">
+        <b style="font-size:13.5px">시연용 도구</b>
+        <p class="tiny muted" style="margin-top:4px;line-height:1.55">
+          체크 알림은 구매 후 7·14·30일에 발송됩니다. 프로토타입에서는 시간을 앞당겨 확인할 수 있어요.</p>
+        <button class="btn btn-sm btn-line btn-block" style="margin-top:9px" onclick="timeTravel(7)">7일 경과시키기</button>
+      </div>
+      <div class="gap-b"></div>
+    </div>`;
+  },
+};
+function timeTravel(d){
+  if (!S.orders.length) return toast('먼저 주문을 하나 만들어 주세요');
+  S.orders.forEach(o=>o.daysAgo += d); save(); render();
+  toast(`${d}일이 지난 것으로 처리했어요`);
+}
+
+/* 상품 종류에 따라 확인할 내용이 달라집니다 (2.1.4-1b) */
+const CHECK_Qs = {
+  food : ['기호성 (잘 먹었나요?)','변 상태','피부·가려움','체중 변화'],
+  treat: ['기호성','크기·단단함이 적당했나요?','급여 후 이상 반응'],
+  supp : ['거부감 없이 먹었나요?','목표한 부분에 변화가 있었나요?'],
+};
+SCREENS.checkin = {
+  title: ()=>'사용 후 체크',
+  appbar: ()=>barBack('사용 후 체크'),
+  view: (p)=>{
+    const [oid, pid, day] = p.key.split(':');
+    const pr = product(pid); const pet = activePet();
+    const o = S.orders.find(x=>x.id===oid);
+    const names = (o?.items.find(i=>i.pid===pid)?.forPets||[]).map(id=>S.pets.find(x=>x.id===id)?.name).filter(Boolean).join(', ') || pet?.name || '아이';
+    return `<div class="pad">
+      <div class="row" style="gap:12px">
+        <div class="thumb" style="width:62px;height:62px;font-size:28px"><span>${pr.emo}</span></div>
+        <div style="flex:1;min-width:0">
+          <span class="badge badge-brand">${day}일차</span>
+          <div class="pname" style="font-size:15px;margin-top:5px;-webkit-line-clamp:2">${esc(pr.name)}</div>
+        </div>
+      </div>
+      <h2 style="font-size:19px;font-weight:800;letter-spacing:-.5px;line-height:1.45;margin-top:18px">
+        ${esc(names)}에게 잘 맞았나요?</h2>
+      ${an('2.1.4-1 판단 어려우면 관찰 중으로 · 3지선다', true)}
+
+      <div class="card" style="margin-top:16px">
+        <b style="font-size:13.5px">${J(CATS.find(c=>c.id===pr.cat).name,'은는')} 이런 걸 확인해요</b>
+        <div class="chip-wrap" style="margin-top:9px">
+          ${(CHECK_Qs[pr.cat]||[]).map(q=>`<span class="badge badge-mute">${q}</span>`).join('')}
+        </div>
+      </div>
+
+      <div class="stack" style="margin-top:16px;gap:9px">
+        ${[
+          ['keep','😊','계속 먹일 것 같아요','잘 맞는 상품으로 기록하고 재구매 시점에 알려드려요'],
+          ['watch','🤔','조금 더 지켜볼게요','판단하기 어려운 상품은 관찰 중으로 표시돼요'],
+          ['stop','😥','다른 걸 찾아볼래요','비슷한 성분을 제외하고 다시 추천해 드려요'],
+        ].map(([k,e,t,d])=>`
+          <button class="card flat row" style="width:100%;text-align:left;gap:12px;align-items:flex-start"
+                  onclick="answerCheckin('${p.key}','${k}')">
+            <span style="font-size:24px;line-height:1.1">${e}</span>
+            <div style="flex:1"><b style="font-size:14.5px;letter-spacing:-.3px">${t}</b>
+              <p class="tiny muted" style="margin-top:3px;line-height:1.55">${d}</p></div>
+          </button>`).join('')}
+      </div>
+
+      <div class="notice notice-info" style="margin-top:16px">${ic('info')}
+        <span>정확한 판단을 위해, 새 사료를 급여하는 동안에는 다른 간식을 잠시 멈춰 보세요. 변화의 원인을 좁히는 데 도움이 됩니다.</span></div>
+      <div class="gap-b"></div>
+    </div>`;
+  },
+};
+function answerCheckin(key, answer){
+  S.checkins[key] = {answer, at:Date.now()}; save();
+  const msg = {keep:'잘 맞는 상품으로 기록했어요', watch:'관찰 중으로 표시했어요', stop:'추천에서 비슷한 성분을 줄일게요'}[answer];
+  toast(msg);
+  const rest = pendingCheckins();
+  rest.length ? go('notice',{},true) : goTab('home');
+}
+
+/* --------------------------------------------------------------- 마이 */
+SCREENS.my = {
+  tab:'my', title: ()=>'MY',
+  appbar: ()=>barMain('MY'),
+  view: ()=>{
+    const pet = activePet();
+    const liked = S.liked.map(product).filter(Boolean);
+    const recent = S.recent.map(product).filter(Boolean);
+    return `<div class="pad">
+      <div class="card row" style="gap:12px">
+        <div style="width:46px;height:46px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-size:20px">👤</div>
+        <div style="flex:1"><b style="font-size:15.5px">김동찬 님</b>
+          <div class="tiny muted" style="margin-top:2px">${S.provider==='email'?'이메일':S.provider||'카카오'} 계정으로 로그인</div></div>
+      </div>
+
+      <div class="card">
+        <div class="between"><b style="font-size:14.5px">우리 아이 ${S.pets.length}마리</b>
+          <button class="btn btn-sm btn-soft" onclick="startPetForm()">+ 추가</button></div>
+        <div style="margin-top:10px">
+          ${S.pets.map(p=>`
+            <div class="row" style="gap:11px;padding:10px 0;border-bottom:1px solid var(--line)">
+              <div class="pet-ava" style="${S.activePet===p.id?'':'border-color:var(--line2);background:var(--surface2)'}">${p.emo}</div>
+              <div style="flex:1;min-width:0">
+                <div class="row" style="gap:5px"><b style="font-size:14.5px">${esc(p.name)}</b>
+                  ${S.activePet===p.id?'<span class="badge badge-brand">대표</span>':''}</div>
+                <div class="tiny muted" style="margin-top:2px">${esc(p.breed)} · ${ageText(p.ageM)} · ${p.kg}kg · ${stageLabel(p)}</div>
+                ${p.allergies.length?`<div class="chip-wrap" style="margin-top:5px">
+                  ${p.allergies.map(a=>`<span class="badge badge-warn">${a}</span>`).join('')}</div>`:''}
+              </div>
+              ${S.activePet===p.id?'':`<button class="btn btn-sm btn-line" onclick="S.activePet='${p.id}';save();render();toast('${esc(p.name)} 기준으로 바꿨어요')">대표로</button>`}
+            </div>`).join('') || '<p class="small muted" style="padding:10px 0">등록된 아이가 없어요.</p>'}
+        </div>
+        <p class="tiny muted" style="margin-top:10px;line-height:1.55">
+          대표 아이는 홈 화면 추천의 기준이 됩니다. 로그인할 때마다 고를지, 대표를 지정해 둘지는 정책 확인이 필요합니다.</p>
+        ${an('2.1.1-4 대표 반려동물 지정 방식', true)}
+      </div>
+
+      <div class="card" style="padding:4px 16px">
+        ${[['주문 내역',`go('orders')`, S.orders.length+'건'],
+           ['알림 · 사용 후 체크',`go('notice')`, pendingCheckins().length? pendingCheckins().length+'건':''],
+           ['찜한 상품','toast(\'찜 목록은 아래에서 확인할 수 있어요\')', liked.length+'개'],
+           ['고객센터','toast(\'프로토타입 범위 밖입니다\')','']].map(([t,fn,tag],i)=>`
+          <button class="between" style="width:100%;padding:14px 0;border-bottom:${i<3?'1px solid var(--line)':'0'};text-align:left"
+                  onclick="${fn}">
+            <span style="font-size:14.5px;font-weight:600">${t}</span>
+            <span class="row" style="gap:4px"><span class="tiny muted">${tag}</span>
+              <span style="color:var(--ink4)">${ic('next')}</span></span></button>`).join('')}
+      </div>
+
+      ${liked.length?`<div style="margin-top:22px">
+        <div class="sec-head"><div class="sec-title" style="font-size:15px">찜한 상품</div></div>
+        <div class="card" style="padding:2px 16px">${liked.map(p=>pRow(p,pet,{why:false})).join('')}</div>
+      </div>`:''}
+
+      ${recent.length?`<div style="margin-top:22px">
+        <div class="sec-head"><div class="sec-title" style="font-size:15px">최근 본 상품</div></div>
+        <div class="hscroll" style="margin:0 -16px;padding-left:16px">
+          ${recent.map(p=>`<div style="width:120px">${pCard(p,pet)}</div>`).join('')}
+        </div></div>`:''}
+
+      <button class="btn btn-ghost btn-block" style="margin-top:24px" onclick="reset()">로그아웃 · 데이터 초기화</button>
+      <div class="gap-b"></div><div class="tabpad"></div>
+    </div>`;
+  },
+};
+
+/* ============================================================================
+   데모 데이터
+   ========================================================================== */
+function seedDemo(){
+  S = structuredClone(DEFAULT_STATE);
+  S.signedIn = true; S.provider = 'apple';
+  S.pets = [
+    { id:'pet1', name:'보리', emo:'🐶', species:'dog', breed:'푸들', ageM:48, sex:'f',
+      neutered:true, kg:5.2, activity:'보통',
+      allergies:['닭고기'], concerns:['피부/모질','눈물자국'],
+      memo:'2025-11 피부염 진료, 닭고기 제한 권고' },
+    { id:'pet2', name:'나비', emo:'🐱', species:'cat', breed:'코리안숏헤어', ageM:96, sex:'m',
+      neutered:true, kg:4.3, activity:'적음',
+      allergies:[], concerns:['신장','체중관리'], memo:'' },
+  ];
+  S.activePet = 'pet1';
+  /* 체크 알림을 바로 확인할 수 있도록 8일 전 주문을 하나 넣어 둡니다 */
+  S.orders = [{
+    id:'odemo1', at:Date.now(), daysAgo:8, total:45900, status:'배송 완료',
+    items:[{pid:'p03', qty:1, forPets:['pet1']}],
+  }];
+  S.recent = ['p03','p01'];
+  save();
+  HIST.length = 0;
+  go('home', {}, true);
+  toast('보리·나비 데모 데이터로 시작합니다');
+}
+
+/* ============================================================================
+   화면 목록 드로어
+   ========================================================================== */
+function dgo(id, params={}, empty=null){
+  closeDrawer();
+  if (!S.pets.length) seedDemo();
+  go(id, params);
+  if (empty){ FORCE_EMPTY = empty; render(); }
+}
+function openDrawer(){ $('#drawer').classList.add('on'); paintDrawer(); }
+function closeDrawer(){ $('#drawer').classList.remove('on'); }
+
+const DRAWER = [
+  ['온보딩 · 진입', [
+    ['🚀','스플래시','서비스 가치 제안', `closeDrawer();HIST.length=0;go('splash',{},true)`],
+    ['🔐','로그인 / 회원가입','Apple·소셜 로그인 (iOS 필수 항목 포함)', `closeDrawer();go('login')`],
+    ['📋','프로필 등록 안내','왜 등록해야 하는지 설명', `closeDrawer();go('petintro')`],
+    ['✏️','프로필 등록 5단계','종류·품종·체중·알레르기·관심사', `closeDrawer();startPetForm()`],
+    ['🎯','등록 완료 · 기준 정보','먼저 확인할 것 + 상위 추천 3개', `dgo('petdone',{id:'pet1'})`],
+  ]],
+  ['우선순위 1~3위', [
+    ['🏠','홈 · 개인화 추천','프로필 기준 맞춤 점수 정렬', `dgo('home')`],
+    ['🔀','대표 반려동물 전환','선택한 아이 기준으로 전체 재계산', `dgo('home');setTimeout(petSwitchSheet,320)`],
+    ['📊','상품 상세 · 한눈에','맞춤 점수 + 좋은 점/확인할 점 + 급여량', `dgo('product',{id:'p01',tab:'summary'})`],
+    ['🧪','상품 상세 · 성분 분석','수치 해석 · 툴팁 · 기준 이탈 뱃지', `dgo('product',{id:'p01',tab:'nut'})`],
+    ['⚖️','성분 A/B 비교','공통 항목 우세 표시 + 월 예상 비용', `COMPARE={a:'p01',b:'p03'};dgo('compare')`],
+    ['⚠️','알레르기 성분 포함 상품','보리(닭고기 알레르기) 기준 경고 표시', `dgo('product',{id:'p02',tab:'summary'})`],
+  ]],
+  ['커머스 기본기', [
+    ['🗂','카테고리 · 필터/정렬','맞춤 점수순·가격대·알레르기 제외', `FILTER={cat:'food',sort:'match',price:null,safeOnly:true,stageOnly:false,brand:null};dgo('category',{cat:'food'})`],
+    ['🔎','검색 · 자연어 입력','문장으로 조건 추출', `SEARCH={q:'',parsed:null,submitted:false};dgo('search')`],
+    ['✨','자연어 검색 결과','"닭고기 안 들어간 소형견 사료"', `SEARCH={q:'',parsed:null,submitted:false};dgo('search');runSearch('닭고기 안 들어간 소형견 사료')`],
+    ['🛒','장바구니','수량 조절 · 누가 먹나요 선택', `dgo('home');addCart('p03');addCart('p12');go('cart')`],
+    ['💳','주문 / 결제','배송지 · 결제 수단 · 아이별 연결', `dgo('home');if(!S.cart.length)addCart('p03');go('checkout')`],
+    ['📦','주문 내역','배송 상태 · 재구매', `dgo('orders')`],
+    ['👤','MY','프로필 관리 · 찜 · 최근 본 상품', `dgo('my')`],
+  ]],
+  ['최소 구현 (4~5위)', [
+    ['💬','리뷰 · 우리 아이와 비슷한 조건','종·생애주기·체중대·관심사로 필터', `REVFILTER='similar';dgo('product',{id:'p01',tab:'rev'})`],
+    ['🤖','리뷰 · AI 요약 + 반응별 통계','요약 문장과 태그 집계를 분리 표시', `REVFILTER='all';dgo('product',{id:'p03',tab:'rev'})`],
+    ['🔔','알림 · 사용 후 체크','7·14·30일 체크 알림 목록', `dgo('notice')`],
+    ['📝','사용 후 체크 응답','관찰 중 / 계속 / 중단 3지선다', `dgo('notice');const c=pendingCheckins()[0];if(c)go('checkin',{key:c.key})`],
+  ]],
+  ['예외 케이스', [
+    ['🚫','맞는 상품이 없는 경우','조건 완화 제안 + 비슷한 조건 결과', `FILTER={cat:'toy',sort:'match',price:'high',safeOnly:true,stageOnly:true,brand:null};dgo('category',{cat:'toy'})`],
+    ['🔎','맞는 리뷰가 없는 경우','리뷰어 조건 요약 + 대안 제시', `S.activePet='pet1';REVFILTER='similar';dgo('product',{id:'p05',tab:'rev'})`],
+    ['✍️','리뷰가 없는 신상품','성분으로 판단하도록 유도', `dgo('product',{id:'p11',tab:'rev'})`],
+    ['🫙','검색 결과 없음','다른 조건 제안', `SEARCH={q:'없는상품',parsed:null,submitted:true};dgo('search')`],
+    ['🛒','빈 장바구니','추천으로 되돌리기', `dgo('cart',{},'cart')`],
+    ['📦','주문 내역 없음','첫 구매 유도', `dgo('orders',{},'orders')`],
+    ['❄️','콜드 스타트 유저','구매 이력 없이 프로필만으로 추천', `dgo('home',{},'cold')`],
+    ['🐾','반려동물 미등록','프로필 등록 유도', `closeDrawer();S.pets=[];S.activePet=null;save();HIST.length=0;go('home',{},true)`],
+  ]],
+];
+function paintDrawer(){
+  $('#drawerBody').innerHTML = DRAWER.map(([g, items])=>`
+    <div class="dgroup"><h4>${g}</h4>
+      ${items.map(([k,n,d,fn])=>`
+        <button class="ditem" onclick="${fn.replace(/"/g,'&quot;')}">
+          <span class="dk">${k}</span>
+          <span style="flex:1;min-width:0"><span class="dn">${n}</span><span class="dd">${d}</span></span>
+        </button>`).join('')}
+    </div>`).join('');
+}
+
+/* ============================================================================
+   초기화
+   ========================================================================== */
+$('#devbtn').addEventListener('click', openDrawer);
+document.querySelectorAll('[data-close-drawer]').forEach(b=>b.addEventListener('click', closeDrawer));
+$('#annotToggle').addEventListener('change', e=>{
+  document.body.classList.toggle('annots', e.target.checked);
+});
+$('#resetBtn').addEventListener('click', ()=>{ closeDrawer(); reset(); toast('초기 상태로 되돌렸어요'); });
+document.addEventListener('keydown', e=>{
+  if (e.key === 'Escape'){ closeDrawer(); closeSheet(); }
+});
+
+/* 상태바 시계 */
+function tick(){
+  const d = new Date();
+  $('#sb-time').textContent = `${d.getHours()%12||12}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+tick(); setInterval(tick, 30000);
+
+/* 첫 진입 화면 결정 */
+if (S.pets.length)      go('home', {}, true);
+else if (S.signedIn)    go('petintro', {}, true);
+else                    go('splash', {}, true);
+</script>
+</body>
+</html>
