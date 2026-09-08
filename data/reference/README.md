@@ -107,3 +107,56 @@ Cosmetics Shop(`remove_from_cart` 포함, purchase 약 6~8%)보다 구매 전환
 - **골라주개냥과의 연결점**: `item_properties`처럼 "상품 속성이 시간에 따라 바뀌는" 구조는
   없지만, `events.csv`의 강한 깔때기 형태(view→addtocart→transaction)는 서비스 초기
   전환율 벤치마크를 잡을 때 참고할 만합니다.
+
+## ecommerce_sales_analytics_samples/ — E-Commerce Sales Analytics Dataset (샘플)
+
+- **출처**: [E-Commerce Sales Analytics Dataset](https://www.kaggle.com/datasets/datascikhan/e-commerce-sales-and-customer-analytics) (Kaggle, Shair Khan, CC0 라이선스)
+- **원본 규모**: 2021~2025년 시뮬레이션 거래 15만 건, 고객 25,000명, 상품 1,175개. 5개
+  파일 총 88.59MB. `customer_master.csv`·`product_catalog.csv`·`dataset_statistics.csv`는
+  작아서 원본 그대로, 큰 파일 2개(`order_items.csv`, `ecommerce_sales_customer_analytics.csv`)는
+  각 5만 행 무작위 샘플입니다.
+- **골라주개냥과의 연결점**: 이커머스 D2C 서비스가 추적할 법한 지표(마케팅 채널,
+  로열티 포인트, 고객생애가치(CLV), 재구매 여부, 배송 상태, 반품 사유, 리뷰 감성)를
+  거의 다 포함하고 있어, 매출·마케팅·물류·고객 관점의 스키마 참고 자료로 유용합니다.
+
+| 파일 | 행 수 | 비고 |
+|---|---|---|
+| `customer_master.csv` | 25,000 (전체) | 고객 기본정보 |
+| `product_catalog.csv` | 1,175 (전체) | 상품 카탈로그 |
+| `order_items.csv` | 50,000 (샘플) | 주문 상품 라인 아이템 |
+| `ecommerce_sales_customer_analytics.csv` | 50,000 (샘플) | 44개 컬럼, 주문+고객+마케팅+물류+리뷰+로열티 통합 |
+| `dataset_statistics_original.csv` | 1 | 원본 전체(15만 건) 기준 요약 통계 (아래 표) |
+
+원본 전체(15만 건) 기준 통계 (`dataset_statistics_original.csv`에서):
+
+| 지표 | 값 |
+|---|---|
+| 총 거래 | 138,116건 |
+| 총 고객 | 24,911명 |
+| 총 매출 | $177,134,263.74 |
+| 총 이익 | $76,146,395.76 |
+| 평균 주문금액 | $1,282.50 |
+| 평균 평점 | 3.68 |
+| 반품률 | 6.85% |
+| 취소율 | 6.08% |
+
+5만 행 샘플(`ecommerce_sales_customer_analytics.csv`) 기준 분포:
+
+| 컬럼 | 분포 |
+|---|---|
+| `order_status` | Completed 81.9% · Returned 6.9% · Cancelled 6.2% · Pending 4.9% |
+| `sales_channel` | Mobile App 40.2% · Website 34.5% · Marketplace 15.1% · Social Media 10.2% |
+| `marketing_channel` | Organic Search 20.3% · Direct 14.8% · Google Ads 14.7% · Facebook Ads 12.3% · Instagram 10.0% |
+| `delivery_status` | On Time 62.8% · Cancelled 18.1% · Delayed 12.1% · Early 7.1% |
+| `review_sentiment` | Positive 56.3% · Neutral 25.0% · 결측 18.1% · Negative 0.6% |
+| `customer_segment` | Consumer 55.1% · Premium 25.0% · VIP 10.0% · Business 9.9% |
+
+### 데이터 특이사항
+
+- `is_repeat_customer`가 샘플의 **99.8%가 True**입니다. 재구매 고객 비율치고는
+  비정상적으로 높아, 이 컬럼이 "이번이 최초 주문인지"가 아니라 다른 정의(예: 활성
+  고객 여부)로 채워졌을 가능성이 있습니다. 재구매율 관련 분석에 그대로 쓰기보다는
+  `customer_order_count`(주문 횟수) 컬럼으로 직접 재구매 여부를 재정의하는 편이
+  안전합니다.
+- `review_sentiment`는 부정 리뷰가 0.6%로 극히 적습니다. 평균 평점 3.68점과 비교하면
+  감성 라벨이 실제 평점 분포보다 낙관적으로 시뮬레이션된 것으로 보입니다.
