@@ -37,3 +37,27 @@
 - `EventType` 각 값이 거의 균등(14% 내외)하게 분포돼 있어, 실제 서비스에서 흔히 보이는
   깔때기형 감소(조회 > 장바구니 > 구매) 패턴과는 다릅니다. 순수 참고용 스키마 예시로
   활용하고, 비율 자체를 벤치마크로 쓰지는 않는 것을 권장합니다.
+
+## cosmetics_shop_samples/ — eCommerce Events History in Cosmetics Shop (샘플)
+
+- **출처**: [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop) (Kaggle, Michael Kechinov / REES46 Marketing Platform)
+- **원본 규모**: 2019-10 ~ 2020-02, 5개월치, 약 2.43GB, 20M 유저 이벤트. 저장소에 담기엔
+  너무 커서 **월별 2,000행씩 무작위 샘플**만 포함합니다 (원본은 위 링크에서 받으세요).
+- **샘플링 방법**: 파일을 한 줄씩 스트리밍하며 확률적으로 골라내는 방식(pandas
+  `skiprows` 콜백 + `random.seed(42)`)으로 추출 후 `event_time` 기준 정렬. 앞부분만
+  자르는 방식과 달리 각 월 전체 기간에 걸쳐 고르게 분포합니다.
+- **스키마**: `event_time, event_type, product_id, category_id, category_code, brand, price, user_id, user_session`
+  (REES46 "eCommerce behavior data from multi category store"와 동일한 스키마)
+- **event_type**: `view`(조회) / `cart`(장바구니 담기) / `remove_from_cart`(장바구니 제거) / `purchase`(구매) 4종
+
+| 파일 | 행 수 | 기간 | view | cart | remove_from_cart | purchase | 평균가 | brand 결측 |
+|---|---|---|---|---|---|---|---|---|
+| 2019-Oct.csv | 2,000 | 10/01~10/31 | 43% | 32% | 20% | 6% | $8.51 | 38% |
+| 2019-Nov.csv | 2,000 | 11/01~11/30 | 45% | 27% | 20% | 8% | $7.75 | 43% |
+| 2019-Dec.csv | 2,000 | 12/01~12/31 | 49% | 26% | 19% | 6% | $9.09 | 42% |
+| 2020-Jan.csv | 2,000 | 01/01~01/31 | 47% | 27% | 20% | 5% | $8.04 | 42% |
+| 2020-Feb.csv | 2,000 | 02/01~02/29 | 45% | 30% | 20% | 6% | $7.95 | 44% |
+
+`view → cart → purchase` 순으로 자연스럽게 줄어드는 깔때기 형태를 보여, 골라주개냥
+가상 데이터의 이벤트 스키마·퍼널 설계와 비교해 볼 만한 참고 자료입니다. `remove_from_cart`
+비중(약 20%)이 꾸준히 높은 것도 특징입니다.
