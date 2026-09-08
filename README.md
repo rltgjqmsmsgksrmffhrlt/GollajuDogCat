@@ -82,6 +82,7 @@ python3 05_build_report.py            # 최종 xlsx 리포트 생성
 - [Retail Rocket E-commerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset) — 추천 클릭 로그 포함. REES46/Cosmetics와 스키마가 다름(방문 클릭스트림 + 상품 속성 변경 이력). 각 파일 5만행 무작위 샘플(+ 작은 category_tree는 전체)을 `data/reference/retailrocket_samples/`에 포함
 - [E-commerce Clickstream and Transaction Dataset](https://www.kaggle.com/datasets/waqi786/e-commerce-clickstream-and-transaction-dataset) — 세션 내 page_view→click→product_view→add_to_cart→purchase 클릭스트림. 용량이 작아(3.93MB) 원본을 `data/reference/ecommerce_clickstream_transactions.csv`에 그대로 포함 (자세한 설명은 `data/reference/README.md` 참고)
 - [E-Commerce Sales Analytics Dataset](https://www.kaggle.com/datasets/datascikhan/e-commerce-sales-and-customer-analytics) — 매출·마케팅 채널·물류·반품·리뷰·로열티까지 아우르는 통합 스키마(44개 컬럼). 작은 파일은 전체, 큰 파일 2개는 5만행 샘플로 `data/reference/ecommerce_sales_analytics_samples/`에 포함
+- [Amazon_Sales_Dataset](https://www.kaggle.com/datasets/aliiihussain/amazon-sales-dataset) — 가격·할인율·배송지역·결제수단·평점 스키마. 용량이 작아(4.17MB) 원본을 `data/reference/amazon_sales_dataset/`에 그대로 포함 (다만 분포가 인위적으로 균등해 스키마 참고용에 가까움)
 
 원본이 커서 담지 못한 데이터셋(REES46, Cosmetics Shop, Retail Rocket)은 각각 월별/파일별로
 무작위 샘플링한 사본을 `data/reference/`에 포함해 두었습니다. 샘플링 방법과 통계는

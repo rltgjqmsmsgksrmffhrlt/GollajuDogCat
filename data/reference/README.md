@@ -160,3 +160,30 @@ Cosmetics Shop(`remove_from_cart` 포함, purchase 약 6~8%)보다 구매 전환
   안전합니다.
 - `review_sentiment`는 부정 리뷰가 0.6%로 극히 적습니다. 평균 평점 3.68점과 비교하면
   감성 라벨이 실제 평점 분포보다 낙관적으로 시뮬레이션된 것으로 보입니다.
+
+## amazon_sales_dataset/ — Amazon_Sales_Dataset
+
+- **출처**: [Amazon_Sales_Dataset](https://www.kaggle.com/datasets/aliiihussain/amazon-sales-dataset) (Kaggle, Ali Hussain, CC0 라이선스)
+- **원본 규모**: 50,000행, 13컬럼, 4.17MB — 용량이 작아 샘플링 없이 원본 그대로 포함
+- **스키마**: `order_id, order_date, product_id, product_category, price, discount_percent,
+  quantity_sold, customer_region, payment_method, rating, review_count, discounted_price,
+  total_revenue`
+- **기간**: 2022-01-01 ~ 2023-12-31
+
+| 항목 | 값 |
+|---|---|
+| product_category | Beauty/Fashion/Books/Electronics/Sports/Home & Kitchen 6종, 각 16~17%로 균등 |
+| customer_region | Asia/North America/Middle East/Europe 4개 지역, 각 25%로 균등 |
+| payment_method | Wallet/UPI/Debit Card/Cash on Delivery/Credit Card 5종, 각 20%로 균등 |
+| discount_percent | 0/5/10/15/20/30% 6개 값만 존재 (연속값 아님) |
+| price | $5.01~$499.99, 평균 $252.51 |
+| rating | 1~5점, 평균 정확히 3.00 |
+
+### 데이터 특이사항
+
+다른 참고 데이터셋들과 달리, 카테고리·지역·결제수단 비율이 전부 인위적으로
+균등합니다(예: 4개 지역이 정확히 25%씩). `rating` 평균도 정확히 3.00으로 떨어지고,
+`discount_percent`는 6개 값만 이산적으로 존재합니다. 실제 서비스 데이터라기보다는
+**완전 무작위 생성 데이터**로 보이며, 특정 세그먼트나 카테고리의 편향된 행동 패턴을
+찾는 분석(EDA 연습 이상의 인사이트)에는 적합하지 않을 수 있습니다. 컬럼 스키마
+자체(가격·할인율·배송지역·결제수단·평점 조합)를 참고하는 용도로 활용하세요.
