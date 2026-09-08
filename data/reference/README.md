@@ -42,22 +42,47 @@
 
 - **출처**: [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop) (Kaggle, Michael Kechinov / REES46 Marketing Platform)
 - **원본 규모**: 2019-10 ~ 2020-02, 5개월치, 약 2.43GB, 20M 유저 이벤트. 저장소에 담기엔
-  너무 커서 **월별 2,000행씩 무작위 샘플**만 포함합니다 (원본은 위 링크에서 받으세요).
+  너무 커서 **월별 5만 행씩 무작위 샘플**만 포함합니다 (원본은 위 링크에서 받으세요).
 - **샘플링 방법**: 파일을 한 줄씩 스트리밍하며 확률적으로 골라내는 방식(pandas
   `skiprows` 콜백 + `random.seed(42)`)으로 추출 후 `event_time` 기준 정렬. 앞부분만
-  자르는 방식과 달리 각 월 전체 기간에 걸쳐 고르게 분포합니다.
+  자르는 방식과 달리 각 월 전체 기간에 걸쳐 고르게 분포합니다. (최초에는 2,000행으로
+  뽑았다가, 30MB 첨부 한도 대비 용량 여유가 많아 5만 행으로 다시 추출했습니다.)
 - **스키마**: `event_time, event_type, product_id, category_id, category_code, brand, price, user_id, user_session`
   (REES46 "eCommerce behavior data from multi category store"와 동일한 스키마)
 - **event_type**: `view`(조회) / `cart`(장바구니 담기) / `remove_from_cart`(장바구니 제거) / `purchase`(구매) 4종
 
-| 파일 | 행 수 | 기간 | view | cart | remove_from_cart | purchase | 평균가 | brand 결측 |
-|---|---|---|---|---|---|---|---|---|
-| 2019-Oct.csv | 2,000 | 10/01~10/31 | 43% | 32% | 20% | 6% | $8.51 | 38% |
-| 2019-Nov.csv | 2,000 | 11/01~11/30 | 45% | 27% | 20% | 8% | $7.75 | 43% |
-| 2019-Dec.csv | 2,000 | 12/01~12/31 | 49% | 26% | 19% | 6% | $9.09 | 42% |
-| 2020-Jan.csv | 2,000 | 01/01~01/31 | 47% | 27% | 20% | 5% | $8.04 | 42% |
-| 2020-Feb.csv | 2,000 | 02/01~02/29 | 45% | 30% | 20% | 6% | $7.95 | 44% |
+| 파일 | 행 수 | 기간 |
+|---|---|---|
+| 2019-Oct.csv | 50,000 | 10/01~10/31 |
+| 2019-Nov.csv | 50,000 | 11/01~11/30 |
+| 2019-Dec.csv | 50,000 | 12/01~12/31 |
+| 2020-Jan.csv | 50,000 | 01/01~01/31 |
+| 2020-Feb.csv | 50,000 | 02/01~02/29 |
 
 `view → cart → purchase` 순으로 자연스럽게 줄어드는 깔때기 형태를 보여, 골라주개냥
 가상 데이터의 이벤트 스키마·퍼널 설계와 비교해 볼 만한 참고 자료입니다. `remove_from_cart`
 비중(약 20%)이 꾸준히 높은 것도 특징입니다.
+
+## retailrocket_samples/ — Retail Rocket E-commerce Dataset (샘플)
+
+- **출처**: [Retail Rocket E-commerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset) (Kaggle)
+- **원본 규모**: 실제 이커머스 방문 로그(2015년 5개월치) + 상품 속성 변경 이력. 스키마가
+  REES46/Cosmetics와 완전히 다릅니다.
+- **파일 4개**:
+  - `events.csv` (5만 행 무작위 샘플): 방문자 클릭스트림. `timestamp`(unix ms), `visitorid`,
+    `event`(view/addtocart/transaction), `itemid`, `transactionid`. 기간 2015-05-03~2015-09-18,
+    고유 방문자 45,506명·상품 31,312개. event 분포는 view 96.7% / addtocart 2.5% /
+    transaction 0.8% — 실제 이커머스에서 흔히 보이는 강한 깔때기 형태(조회 대비 구매 전환이
+    1% 미만)를 보여줍니다.
+  - `item_properties_part1.csv`, `item_properties_part2.csv` (각 5만 행 무작위 샘플): 상품
+    속성이 시간에 따라 바뀐 이력. `timestamp`, `itemid`, `property`, `value`. **유저 행동
+    로그가 아니라 상품 속성 스냅샷**이라는 점에서 다른 파일들과 성격이 다릅니다. `property`는
+    숫자로 해시된 값(예: `888`, `790`, `6`)과 `available`, `categoryid` 같은 이름 있는 값이
+    섞여 있습니다 (원본 데이터셋이 일부 속성을 익명화한 결과). 원본은 시간 순 정렬 후 두
+    파일로 분할돼 있어, 샘플도 동일 기간(2015-05-10~2015-09-13)에서 각각 무작위 추출했습니다.
+  - `category_tree.csv` (전체, 1,669행): `categoryid`, `parentid` 두 컬럼뿐인 카테고리
+    트리입니다. 원본 자체가 작아 샘플링 없이 전체를 그대로 포함했습니다. 최상위(부모 없음)
+    카테고리 25개.
+- **골라주개냥과의 연결점**: `item_properties`처럼 "상품 속성이 시간에 따라 바뀌는" 구조는
+  없지만, `events.csv`의 강한 깔때기 형태(view→addtocart→transaction)는 서비스 초기
+  전환율 벤치마크를 잡을 때 참고할 만합니다.
