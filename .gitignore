@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Temp / scratch (스크립트 재실행 시 생기는 중간 산출물 — data/generated/의 최종본과는 별개)
+*_tmp_*.csv
+*_out_*.csv
