@@ -27,7 +27,7 @@ KT TechUP 골라주개냥(우지빌) 프로젝트의 KPI 검증용 데이터 수
 │       ├── products_master.csv
 │       ├── orders.csv
 │       ├── pet_reactions.csv
-│       ├── events_log.csv                    # 통합 이벤트 로그 (약 27만 건, Git LFS)
+│       ├── events_log.csv                    # 통합 이벤트 로그 (약 27만 건)
 │       ├── funnel1_purchase_journey.csv       # 가설1 구매 여정 퍼널
 │       ├── funnel2_reaction_journey.csv       # 가설3 반응입력 여정 퍼널
 │       ├── cohort_A_repurchase_pct.csv        # A그룹 코호트별 재구매율
@@ -37,7 +37,7 @@ KT TechUP 골라주개냥(우지빌) 프로젝트의 KPI 검증용 데이터 수
 ├── docs/                   # 설계 근거, 검증 로그 등 부가 문서
 ├── CLAUDE.md                # Claude Code가 이 저장소를 이해하기 위한 컨텍스트
 ├── requirements.txt
-├── .gitattributes           # Git LFS 대상 파일 지정
+├── .gitattributes           # (일반 파일로 관리 - 아래 "Git LFS 대신 일반 파일로 관리하는 이유" 참고)
 └── .gitignore
 ```
 
@@ -80,6 +80,19 @@ python3 05_build_report.py            # 최종 xlsx 리포트 생성
 - [eCommerce behavior data from multi category store (REES46)](https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store) — `event_type`이 view/cart/purchase로 거의 1:1 매핑
 - [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop) — 같은 스키마의 경량 버전(약 2GB)
 - [Retail Rocket E-commerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset) — 추천 클릭 로그 포함
+
+## Git LFS 대신 일반 파일로 관리하는 이유
+
+`events_log.csv`(약 23MB)와 `orders.csv`(약 1MB)는 원래 git diff/clone 성능을 위해
+Git LFS로 관리할 계획이었고 `.gitattributes`에도 그렇게 지정돼 있었습니다. 다만 이 저장소를
+GitHub에 올리는 작업을 수행한 환경의 아웃바운드 네트워크 정책이 GitHub LFS 업로드에 필요한
+확인(verify) 엔드포인트(`lfs.github.com`)를 차단하고 있어, 실제 데이터 저장소(S3)까지는
+정상 전송되어도 GitHub이 해당 오브젝트를 최종적으로 인식하지 못하는 문제가 있었습니다.
+
+두 파일 모두 GitHub의 하드 제한(100MB)에는 여유 있게 들어가므로, 이번 푸시에서는 LFS 없이
+일반 git 파일로 커밋했습니다. `git diff`나 `git clone` 속도에 약간 영향이 있을 수 있지만
+기능상 문제는 없습니다. 추후 LFS로 전환하고 싶다면 `.gitattributes`에 LFS 필터를 다시 추가하고
+`git lfs migrate import`로 히스토리를 재작성하면 됩니다 (제약이 없는 환경에서 진행 필요).
 
 ## 라이선스
 
