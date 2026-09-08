@@ -80,6 +80,7 @@ python3 05_build_report.py            # 최종 xlsx 리포트 생성
 - [eCommerce behavior data from multi category store (REES46)](https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store) — `event_type`이 view/cart/purchase로 거의 1:1 매핑
 - [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop) — 같은 스키마의 경량 버전(약 2GB)
 - [Retail Rocket E-commerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset) — 추천 클릭 로그 포함
+- [E-commerce Clickstream and Transaction Dataset](https://www.kaggle.com/datasets/waqi786/e-commerce-clickstream-and-transaction-dataset) — 세션 내 page_view→click→product_view→add_to_cart→purchase 클릭스트림. 용량이 작아(3.93MB) 원본을 `data/reference/ecommerce_clickstream_transactions.csv`에 그대로 포함 (자세한 설명은 `data/reference/README.md` 참고)
 
 ## Git LFS 대신 일반 파일로 관리하는 이유
 
