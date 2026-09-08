@@ -38,6 +38,27 @@
   깔때기형 감소(조회 > 장바구니 > 구매) 패턴과는 다릅니다. 순수 참고용 스키마 예시로
   활용하고, 비율 자체를 벤치마크로 쓰지는 않는 것을 권장합니다.
 
+## rees46_samples/ — eCommerce behavior data from multi category store (샘플)
+
+- **출처**: [eCommerce behavior data from multi category store](https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store) (Kaggle, Michael Kechinov / REES46 Marketing Platform)
+- **원본 규모**: 2019-10 ~ 2020-04, 7개월치, 총 2억 8,500만 건 이벤트. 공개된 2개월치
+  (2019-Oct 5.67GB, 2019-Nov 9.01GB)만으로도 저장소에 담기엔 너무 커서, **월별 5만 행
+  무작위 샘플**만 포함합니다.
+- **샘플링 방법**: Cosmetics Shop과 동일한 스트리밍 확률 샘플링(`random.seed(42)`) 후
+  `event_time` 기준 정렬.
+- **스키마**: Cosmetics Shop과 동일 (`event_time, event_type, product_id, category_id,
+  category_code, brand, price, user_id, user_session`) — 다만 `event_type`에
+  `remove_from_cart`가 없고 `view/cart/purchase` 3종만 있습니다.
+
+| 파일 | 행 수 | 기간 | view | cart | purchase |
+|---|---|---|---|---|---|
+| 2019-Oct.csv | 50,000 | 10/01~10/31 | 95.9% | 2.3% | 1.8% |
+| 2019-Nov.csv | 50,000 | 11/01~11/30 | 94.1% | 4.6% | 1.3% |
+
+Cosmetics Shop(`remove_from_cart` 포함, purchase 약 6~8%)보다 구매 전환율이 낮고
+장바구니 제거 단계가 아예 없어, 같은 스키마라도 카테고리(멀티카테고리 대형몰 vs
+화장품 전문몰)에 따라 퍼널 형태가 꽤 다르다는 걸 보여줍니다.
+
 ## cosmetics_shop_samples/ — eCommerce Events History in Cosmetics Shop (샘플)
 
 - **출처**: [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop) (Kaggle, Michael Kechinov / REES46 Marketing Platform)

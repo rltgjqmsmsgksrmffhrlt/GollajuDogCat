@@ -77,9 +77,9 @@ python3 05_build_report.py            # 최종 xlsx 리포트 생성
 이 프로젝트의 이벤트 스키마(`view_item` → `add_to_cart` → `complete_purchase`)와
 구조가 유사한 실제 공개 데이터셋:
 
-- [eCommerce behavior data from multi category store (REES46)](https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store) — `event_type`이 view/cart/purchase로 거의 1:1 매핑
-- [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop) — 같은 스키마의 경량 버전(약 2.43GB, 5개월치). 원본은 커서 못 담고, 월별 2,000행 무작위 샘플만 `data/reference/cosmetics_shop_samples/`에 포함 (자세한 내용은 `data/reference/README.md` 참고)
-- [Retail Rocket E-commerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset) — 추천 클릭 로그 포함
+- [eCommerce behavior data from multi category store (REES46)](https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store) — `event_type`이 view/cart/purchase로 거의 1:1 매핑. 원본은 커서(월별 5.67~9.01GB) 못 담고, 월별 5만행 무작위 샘플만 `data/reference/rees46_samples/`에 포함
+- [eCommerce Events History in Cosmetics Shop](https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop) — 같은 스키마의 경량 버전(약 2.43GB, 5개월치). 원본은 커서 못 담고, 월별 5만행 무작위 샘플만 `data/reference/cosmetics_shop_samples/`에 포함
+- [Retail Rocket E-commerce Dataset](https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset) — 추천 클릭 로그 포함. REES46/Cosmetics와 스키마가 다름(방문 클릭스트림 + 상품 속성 변경 이력). 각 파일 5만행 무작위 샘플(+ 작은 category_tree는 전체)을 `data/reference/retailrocket_samples/`에 포함
 - [E-commerce Clickstream and Transaction Dataset](https://www.kaggle.com/datasets/waqi786/e-commerce-clickstream-and-transaction-dataset) — 세션 내 page_view→click→product_view→add_to_cart→purchase 클릭스트림. 용량이 작아(3.93MB) 원본을 `data/reference/ecommerce_clickstream_transactions.csv`에 그대로 포함 (자세한 설명은 `data/reference/README.md` 참고)
 
 원본이 커서 담지 못한 데이터셋(REES46, Cosmetics Shop, Retail Rocket)은 각각 월별/파일별로
