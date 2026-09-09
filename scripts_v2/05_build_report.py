@@ -94,6 +94,16 @@ for g in ["A", "B"]:
     start_n = len(events[(events.event_type == "reaction_start") & (events.group == g)])
     complete_n = len(events[(events.event_type == "reaction_complete") & (events.group == g)])
 
+    reco_click = events[(events.event_type == "select_item") & (events.source == "recommendation") & (events.group == g)]["session_id"].unique()
+    reco_click_purchase = sum(1 for s in reco_click if s in purch_s)
+    reco_cvr = pct(reco_click_purchase, len(reco_click))
+
+    active_u = events[(events.event_type == "session_start") & (events.group == g)]["user_id"].nunique()
+    reco_screen_u = events[
+        (events.group == g) & (((events.event_type == "view_item") & (events.entry_source == "recommendation")) | (events.event_type == "recommendation_view"))
+    ]["user_id"].nunique()
+    comp_u = events[(events.event_type == "view_comparison") & (events.group == g)]["user_id"].nunique()
+
     M[g] = {
         "view_to_cart": v2c, "cart_to_purchase": c2p, "cart_abandon": abandon,
         "dwell": round(dwell, 1) if pd.notna(dwell) else None,
@@ -101,6 +111,9 @@ for g in ["A", "B"]:
         "nps": nps_val,
         "reaction_start_rate": pct(start_n, alarm_n),
         "reaction_complete_rate": pct(complete_n, start_n),
+        "reco_cvr": reco_cvr,
+        "reco_screen_entry_rate": pct(reco_screen_u, active_u),
+        "compare_usage_rate": pct(comp_u, active_u),
         "n_orders": (orders.group == g).sum(),
     }
 
@@ -169,6 +182,12 @@ metric_rows = [
     ("가설1: 선택 피로도 해소", "구매결정 소요시간", "B", "2.85일 (가정(명시), v1 승계)", f"{M['B']['decision_days']}일", "-"),
     ("가설2: 서비스 충성도", "NPS", "A", "가정(명시): promoter/detractor 각 +-15%", f"{M['A']['nps']}점", "표본 작음(주문 수에 비례)"),
     ("가설2: 서비스 충성도", "NPS", "B", "가정(명시): promoter 32%/detractor 7%, v1 승계", f"{M['B']['nps']}점", "-"),
+    ("가설2: 서비스 충성도", "맞춤 추천 상품 CVR", "A", "계획서 V1 신규: 초기 3.3%/목표 5% (참고치, 역산 목표 아님)", f"{M['A']['reco_cvr']}%", "select_item(reco)->동일세션 결제완료"),
+    ("가설2: 서비스 충성도", "맞춤 추천 상품 CVR", "B", "계획서 V1 신규 (참고치)", f"{M['B']['reco_cvr']}%", "-"),
+    ("가설2: 서비스 충성도", "추천 상품 화면 진입률", "A", "계획서 V1 신규: 초기 35~40%/목표 60% (참고치)", f"{M['A']['reco_screen_entry_rate']}%", "활성유저 기준, 90일 누적이라 목표 상회"),
+    ("가설2: 서비스 충성도", "추천 상품 화면 진입률", "B", "계획서 V1 신규 (참고치)", f"{M['B']['reco_screen_entry_rate']}%", "-"),
+    ("가설2: 서비스 충성도", "비교 기능 사용률", "A", "계획서 V1 개정(활성유저 기준): 초기 15~20%/목표 30~35% (참고치)", f"{M['A']['compare_usage_rate']}%", "90일 누적이라 목표 상회"),
+    ("가설2: 서비스 충성도", "비교 기능 사용률", "B", "계획서 V1 개정 (참고치)", f"{M['B']['compare_usage_rate']}%", "-"),
     ("가설3: 유저 데이터 확보", "반응입력 시작률", "A", "18% x1.15 (가정(명시))", f"{M['A']['reaction_start_rate']}%", "-"),
     ("가설3: 유저 데이터 확보", "반응입력 시작률", "B", "18% (가정(명시), v1 승계)", f"{M['B']['reaction_start_rate']}%", "-"),
     ("가설3: 유저 데이터 확보", "반응입력 완료율", "A", "78% x1.15, cap 97% (가정(명시))", f"{M['A']['reaction_complete_rate']}%", "-"),

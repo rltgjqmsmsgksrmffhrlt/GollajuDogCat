@@ -124,6 +124,37 @@ for g in ["A", "B"]:
     r30 = pct(repurchased_30, eligible_30); r60 = pct(repurchased_60, eligible_60)
     print(f"  N일 재구매율 [{g}]: 30일={r30}% (n={eligible_30}) / 60일={r60}% (n={eligible_60})  (가정(명시))")
 
+# --- 계획서 개정판(V1) 반영: 순수 달성 지표 3종 ---
+# (1) 맞춤 추천 상품 구매전환율(CVR): 추천 영역 클릭(select_item, source=recommendation)
+#     후 동일 세션에서 결제완료로 이어진 비율. 대상 코호트: 추천 상품을 1회 이상 클릭한 유저.
+reco_click_sessions = events[(events.event_type == "select_item") & (events.source == "recommendation")][["session_id", "group"]].drop_duplicates()
+reco_click_sessions["purchased"] = reco_click_sessions["session_id"].isin(purch_s)
+for g in ["A", "B"]:
+    sub = reco_click_sessions[reco_click_sessions.group == g]
+    cvr = pct(sub.purchased.sum(), len(sub))
+    print(f"  맞춤 추천 상품 구매전환율(CVR) [{g}]: {cvr}% (n_click={len(sub)})  (가정(명시) LIFT 반영, 계획서 V1 신규 정의)")
+
+# (2)(3) 추천 상품 화면 진입률 / 비교 기능 사용률: 둘 다 대상 코호트가 "앱 진입 유저"
+#     (서비스 활성 유저, 유저 단위 집계)로 변경됨 — 계획서 V1의 핵심 개정 사항.
+active_users = events[events.event_type == "session_start"][["user_id", "group"]].drop_duplicates()
+reco_screen_users = events[
+    ((events.event_type == "view_item") & (events.entry_source == "recommendation"))
+    | (events.event_type == "recommendation_view")
+][["user_id", "group"]].drop_duplicates()
+comp_users = events[events.event_type == "view_comparison"][["user_id", "group"]].drop_duplicates()
+
+active_n = active_users.groupby("group").user_id.nunique()
+reco_screen_n = reco_screen_users.groupby("group").user_id.nunique()
+comp_n = comp_users.groupby("group").user_id.nunique()
+
+for g in ["A", "B"]:
+    denom = int(active_n.get(g, 0))
+    entry_rate = pct(reco_screen_n.get(g, 0), denom)
+    compare_rate = pct(comp_n.get(g, 0), denom)
+    print(f"  추천 상품 화면 진입률 [{g}]: {entry_rate}% (활성 유저 {denom}명 중 {int(reco_screen_n.get(g, 0))}명)  (계획서 V1 신규, 기준 초기 35~40%/목표 60%)")
+    print(f"  비교 기능 사용률(활성유저 기준) [{g}]: {compare_rate}% (활성 유저 {denom}명 중 {int(comp_n.get(g, 0))}명)  (계획서 V1 개정, 기준 초기 15~20%/목표 30~35%)")
+
+# 참고용(세션 기준 상세): PDP 경유 비교기능 사용률 + 비교 세션 내 구매전환율(비교 후 전환율)
 view_item_sessions = events[events.event_type == "view_item"][["session_id", "group"]].drop_duplicates()
 comp_pdp_sessions = events[(events.event_type == "view_comparison") & (events.entry_source == "pdp")][["session_id", "group"]].drop_duplicates()
 comp_all_sessions = events[events.event_type == "view_comparison"][["session_id", "group"]].drop_duplicates()
@@ -134,7 +165,7 @@ for g in ["A", "B"]:
     rate1 = pct(numer1, denom1)
     sub3 = comp_all_sessions[comp_all_sessions.group == g]
     rate3 = pct(sub3.purchased.sum(), len(sub3))
-    print(f"  PDP경유 비교기능 사용률 [{g}]: {rate1}%  |  비교 세션 내 구매전환율: {rate3}%  (가정(명시))")
+    print(f"  (참고) PDP경유 비교기능 사용률(세션기준) [{g}]: {rate1}%  |  비교 후 전환율: {rate3}%  (가정(명시))")
 
 print()
 print("=" * 72)
