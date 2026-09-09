@@ -33,7 +33,7 @@ START_DATE = datetime(2026, 9, 8)
 END_DATE = datetime(2026, 12, 6)  # 90일
 N_DAYS = (END_DATE - START_DATE).days + 1  # 90
 
-N_PER_GROUP = 2500
+N_PER_GROUP = 9500
 N_USERS = N_PER_GROUP * 2
 
 # ---------------------------------------------------------------------------
