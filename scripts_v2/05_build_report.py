@@ -11,6 +11,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.chart import BarChart, Reference
 import pandas as pd
+import numpy as np
 
 FONT_NAME = "Arial"
 thin = Side(style="thin", color="B7B7B7")
@@ -63,6 +64,7 @@ def pct(a, b):
 # ===========================================================================
 events = pd.read_csv("../data/generated_v2/events_log.csv", parse_dates=["event_timestamp"], low_memory=False)
 orders = pd.read_csv("../data/generated_v2/orders.csv", parse_dates=["purchase_date"])
+users_master = pd.read_csv("../data/generated_v2/users_master.csv")
 
 KAGGLE_VIEW_TO_CART = 0.0360
 KAGGLE_CART_TO_PURCHASE = 0.3283
@@ -115,6 +117,15 @@ for g in ["A", "B"]:
         "reco_screen_entry_rate": pct(reco_screen_u, active_u),
         "compare_usage_rate": pct(comp_u, active_u),
         "n_orders": (orders.group == g).sum(),
+        # --- 판정(P(A>B))용 분자/분모 원자료 ---
+        "_num_purchase": int(sub.purchase.sum()), "_den_session": int(len(sub)),
+        "_num_cart": int(sub.cart.sum()),
+        "_num_reco_purchase": int(reco_click_purchase), "_den_reco_click": int(len(reco_click)),
+        "_num_react_complete": int(complete_n), "_den_alarm": int(alarm_n),
+        "_num_react_check": int(len(events[(events.event_type == "reaction_check") & (events.group == g)])),
+        "_num_promoter": int((nps_sub >= 9).sum()), "_den_nps": int(len(nps_sub)),
+        "_num_repeat_buyer": int((orders[orders.group == g].groupby("user_id").size() >= 2).sum()),
+        "_den_users": int((users_master.group == g).sum()),
     }
 
 # ===========================================================================
@@ -151,9 +162,10 @@ overview_lines = [
     "",
     "시트 구성",
     "1. AB지표_비교 — Kaggle 실측/가정(명시) 기준값과 실제 생성 데이터 지표 비교",
-    "2. 퍼널_구매여정 — 가설1 세션 단위 퍼널 (진입→탐색→장바구니→구매)",
-    "3. 퍼널_반응입력여정 — 가설3 주문 단위 퍼널 (알람→확인→시작→완료→재진입)",
-    "4. 코호트_재구매율 — 가입 주차별 코호트의 주차별 구매 유저 비율(%)",
+    "2. 판정결과 — 베이지안 P(A>B) 기준 A/B 판정 (주 지표 3개 + 보조 지표 4개)",
+    "3. 퍼널_구매여정 — 가설1 세션 단위 퍼널 (진입→탐색→장바구니→구매)",
+    "4. 퍼널_반응입력여정 — 가설3 주문 단위 퍼널 (알람→확인→시작→완료→재진입)",
+    "5. 코호트_재구매율 — 가입 주차별 코호트의 주차별 구매 유저 비율(%)",
 ]
 for i, line in enumerate(overview_lines, start=3):
     c = ws0.cell(row=i, column=2, value=line)
@@ -203,6 +215,77 @@ widths1 = {1: 26, 2: 18, 3: 6, 4: 44, 5: 18, 6: 40}
 for col, w in widths1.items():
     ws1.column_dimensions[get_column_letter(col)].width = w
 ws1.freeze_panes = "A2"
+
+# ===========================================================================
+# 시트1-2: 판정결과 (베이지안 P(A>B))
+#   docs/가설1_가설2_가설3_퍼널_분석_리포트.md 2.2절 판정 규칙과 동일 기준:
+#   - 규칙1: 무정보 사전분포 Beta(1,1) 기준 P(A>B) >= 90% 이면 통과
+#   - 규칙3: 가설당 주 지표 1개만 판정에 사용, 나머지는 보조(참고)
+# ===========================================================================
+_PAB_RNG = np.random.default_rng(20260909)  # 재현성 고정
+
+
+def p_a_better(xa, na, xb, nb, draws=200_000):
+    """Beta(1,1) 사전분포에서 P(A>B)를 몬테카를로로 추정."""
+    if not na or not nb:
+        return None
+    sa = _PAB_RNG.beta(1 + xa, 1 + na - xa, draws)
+    sb = _PAB_RNG.beta(1 + xb, 1 + nb - xb, draws)
+    return round(100 * float((sa > sb).mean()), 1)
+
+
+JUDGE_METRICS = [
+    ("주 지표", "가설1: 선택 피로도 해소", "구매전환율(진입 대비)", "_num_purchase", "_den_session"),
+    ("주 지표", "가설2: 서비스 충성도", "맞춤 추천 재구매 CVR", "_num_reco_purchase", "_den_reco_click"),
+    ("주 지표", "가설3: 유저 데이터 확보", "반응 입력완료율(알람 대비)", "_num_react_complete", "_den_alarm"),
+    ("보조 지표", "가설1: 선택 피로도 해소", "장바구니전환율(진입 대비)", "_num_cart", "_den_session"),
+    ("보조 지표", "가설2: 서비스 충성도", "NPS 추천자 비율", "_num_promoter", "_den_nps"),
+    ("보조 지표", "가설2: 서비스 충성도", "2회+ 구매 유저 비율(전체 유저)", "_num_repeat_buyer", "_den_users"),
+    ("보조 지표", "가설3: 유저 데이터 확보", "알람 확인율", "_num_react_check", "_den_alarm"),
+]
+
+ws1b = wb.create_sheet("판정결과")
+ws1b["A1"] = "판정 기준: 베이지안 사후확률 P(A>B) >= 90% (무정보 사전분포 Beta(1,1)) — 주 지표만 판정에 사용, 보조 지표는 방향 참고"
+ws1b["A1"].font = Font(name=FONT_NAME, size=9, italic=True, color="555555")
+ws1b.merge_cells(start_row=1, start_column=1, end_row=1, end_column=8)
+
+headers1b = ["구분", "가설", "지표", "A (전환/모수)", "A 비율", "B (전환/모수)", "B 비율", "P(A>B)", "판정"]
+for col, h in enumerate(headers1b, start=1):
+    ws1b.cell(row=2, column=col, value=h)
+style_header_row(ws1b, 2, len(headers1b))
+
+judge_rows = []
+for kind, hypo, label, num_key, den_key in JUDGE_METRICS:
+    xa, na = M["A"][num_key], M["A"][den_key]
+    xb, nb = M["B"][num_key], M["B"][den_key]
+    pab = p_a_better(xa, na, xb, nb)
+    if kind == "주 지표":
+        verdict = "채택" if (pab is not None and pab >= 90) else "미달"
+    else:
+        verdict = "방향 일치" if (pab is not None and pab >= 90) else "판단 보류"
+    judge_rows.append([kind, hypo, label, f"{xa}/{na}", f"{pct(xa, na)}%",
+                        f"{xb}/{nb}", f"{pct(xb, nb)}%",
+                        f"{pab}%" if pab is not None else "-", verdict])
+
+for r_idx, row in enumerate(judge_rows, start=3):
+    for c_idx, val in enumerate(row, start=1):
+        ws1b.cell(row=r_idx, column=c_idx, value=val)
+style_body(ws1b, 3, 2 + len(judge_rows), len(headers1b))
+merge_col(ws1b, 1, 3, 2 + len(judge_rows))
+for col, w in {1: 10, 2: 24, 3: 30, 4: 16, 5: 10, 6: 16, 7: 10, 8: 10, 9: 12}.items():
+    ws1b.column_dimensions[get_column_letter(col)].width = w
+ws1b.freeze_panes = "A3"
+
+_note_row = 4 + len(judge_rows)
+for _i, _line in enumerate([
+    "※ 주의사항",
+    "- 지표를 여러 개 검정하면 그중 하나가 우연히 기준을 넘을 확률이 올라갑니다(90% 기준 7개 검정 시 최소 1건 거짓양성 확률 52%).",
+    "  그래서 가설당 '주 지표' 1개만 판정에 사용하고, 보조 지표는 방향 참고로만 씁니다.",
+    "- 가설3은 주 지표 표본(알람노출 주문)이 작아 효과크기 추정 구간이 넓습니다. 매출 임팩트 등 정량 계산에는 구간 하단을 보수적으로 쓰세요.",
+    "- 자세한 판정 규칙과 근거는 docs/가설1_가설2_가설3_퍼널_분석_리포트.md 2.2~2.4절 참고.",
+], start=0):
+    c = ws1b.cell(row=_note_row + _i, column=1, value=_line)
+    c.font = Font(name=FONT_NAME, size=9, bold=(_i == 0), color="555555")
 
 # ===========================================================================
 # 시트2: 퍼널_구매여정
