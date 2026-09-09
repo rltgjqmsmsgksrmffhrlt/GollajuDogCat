@@ -185,14 +185,25 @@ def build_products():
 
                 is_hypo = (func == "HYPOALLERGENIC")
 
+                # 카테고리별 실제 시장 가격대(사업팀 제공 기준가)에 맞춘 가격 샘플링.
+                # FOOD는 소용량(1~2만)~대용량/기능성(4~6만)을 한 범위로 블렌딩,
+                # TREAT는 일반(5천~1만 중심)~프리미엄(1~2만)을 블렌딩, SUPPLEMENT는
+                # "2~4만원대 중심" 그대로. RNG.integers() 호출 1회는 기존과 동일하게
+                # 유지해(호출 횟수 불변) 이후 유저/펫 속성 생성 스트림에 영향이 없도록 함.
+                if cat_code == "SUPPLEMENT":
+                    price = int(RNG.integers(20000, 40000))
+                elif cat_code == "TREAT":
+                    price = int(RNG.integers(5000, 20000))
+                else:  # FOOD
+                    price = int(RNG.integers(10000, 60000))
+
                 prod_rows.append({
                     "product_id": product_id, "category_code": cat_code,
                     "subcategory_code": subcat_code,
                     "product_name": f"{SUBCAT_KOR[subcat_code]} 상품 {i+1}",
                     "species": pick_species_users(species),
                     "function_code": func,
-                    "price_krw": int(RNG.integers(8000, 90000)) if cat_code == "SUPPLEMENT"
-                                 else int(RNG.integers(6000, 70000)),
+                    "price_krw": price,
                 })
 
                 # --- 원재료 구성 (FOOD/TREAT만; SUPPLEMENT는 활성성분 위주라 생략) ---

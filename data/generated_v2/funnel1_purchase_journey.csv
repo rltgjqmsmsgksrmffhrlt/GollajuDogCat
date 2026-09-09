@@ -1,5 +1,5 @@
 ﻿step,A_count,B_count,A_pct_of_start,B_pct_of_start,A_step_conversion,B_step_conversion
-1_session_start,13724,13861,100.0,100.0,,
-2_view_item,13720,13854,100.0,99.9,100.0,99.9
-3_add_to_cart,524,495,3.8,3.6,3.8,3.6
-4_complete_purchase,176,169,1.3,1.2,33.6,34.1
+1_session_start,14079,13622,100.0,100.0,,
+2_view_item,14073,13620,100.0,100.0,100.0,100.0
+3_add_to_cart,511,521,3.6,3.8,3.6,3.8
+4_complete_purchase,192,189,1.4,1.4,37.6,36.3

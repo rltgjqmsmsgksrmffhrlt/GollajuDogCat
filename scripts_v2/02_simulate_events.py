@@ -59,7 +59,7 @@ products_df = pd.read_csv("../data/generated_v2/products_master.csv")
 products_df["allergen_groups"] = products_df["allergen_groups"].fillna("")
 
 products_by_species = {
-    sp: products_df[products_df.species.isin(["both", sp])]["product_id"].tolist()
+    sp: products_df[products_df.species.isin(["dog/cat", sp])]["product_id"].tolist()
     for sp in ["dog", "cat"]
 }
 products_by_id = products_df.set_index("product_id")
