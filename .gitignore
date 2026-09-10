@@ -14,3 +14,7 @@ venv/
 # Temp / scratch (스크립트 재실행 시 생기는 중간 산출물 — data/generated/의 최종본과는 별개)
 *_tmp_*.csv
 *_out_*.csv
+
+# 참조 데이터셋 원본 (용량이 커서 커밋하지 않음 — Kaggle에서 받아 여기 두고
+# scripts_v2/00_extract_reference_stats.py 실행. 자세한 건 data/reference/README.md)
+data/reference/_raw/

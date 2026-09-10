@@ -8,6 +8,29 @@
 루트 `README.md`의 "참고: 실제 공개 이커머스 이벤트 로그 데이터셋" 절에 Kaggle 링크로만
 안내합니다. 이 폴더에는 그중 **용량이 작아 원본 그대로 포함 가능한 데이터셋**만 둡니다.
 
+## 원본을 넣지 않고 참조하는 방식 (권장)
+
+원본이 수십 MB를 넘으면 저장소에 넣지 않고 아래 3단 구조로 관리합니다. 원본 45MB를
+넣어서 결국 쓰는 건 수 KB짜리 집계표인 경우가 대부분이기 때문입니다.
+
+| 단계 | 위치 | 커밋 | 예 |
+|---|---|---|---|
+| ① 원본 | `data/reference/_raw/` | ❌ (`.gitignore`) | `train_40k.csv` 22.8MB |
+| ② 필요한 부분만 필터한 샘플 | `data/reference/<데이터셋>/` | ✅ | `train_40k_pet_supplies.csv` 2.8MB |
+| ③ 집계값 (파이프라인이 실제로 읽는 것) | `data/reference/derived/` | ✅ | `amazon_pet_rating_dist.csv` 97B |
+
+②③은 `scripts_v2/00_extract_reference_stats.py`가 ①에서 생성합니다. 원본은 각
+데이터셋 README의 Kaggle 링크로 안내하므로, 누구나 받아서 같은 결과를 재현할 수 있습니다.
+
+## amazon_pet_reviews/
+
+Amazon 반려동물 상품 리뷰 4,862건 — **평점 분포 실측**(평균 4.040점, 5점 58.78%)의 근거입니다.
+자세한 내용과 사용 시 주의사항은 [`amazon_pet_reviews/README.md`](amazon_pet_reviews/README.md) 참고.
+
+## derived/
+
+위 ③에 해당하는 집계 파일 모음. [`derived/README.md`](derived/README.md) 참고.
+
 ## ecommerce_clickstream_transactions.csv
 
 - **출처**: [E-commerce Clickstream and Transaction Dataset](https://www.kaggle.com/datasets/waqi786/e-commerce-clickstream-and-transaction-dataset) (Kaggle, WAQAR ALI, Apache 2.0 라이선스)
