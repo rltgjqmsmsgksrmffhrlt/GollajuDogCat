@@ -235,6 +235,44 @@ survivor_df = pd.DataFrame({
 }).reset_index()
 survivor_df["유저당_세션수"] = (survivor_df.세션수 / survivor_df.활동_유저수).round(2)
 
+# --- (5) 절단 구성 진단: 초기/후기는 '사람'이 아니라 '세션'을 나눈 것이다.
+#         같은 유저가 양쪽 구간에 모두 등장하는지 확인한다. 만약 '사람'으로
+#         나누면(= 잔존 기간으로 분류) 처치 이후 결과로 다시 나누는 셈이라
+#         무작위 배정이 깨진다 — 그 경우의 수치도 함께 남겨 비교한다.
+starts_all = ev[ev.event_type == "session_start"]
+early_users = set(starts_all.loc[starts_all.elapsed_week <= EARLY_MAX_WEEK, "user_id"])
+late_users = set(starts_all.loc[starts_all.elapsed_week > EARLY_MAX_WEEK, "user_id"])
+active_users = early_users | late_users
+split_rows = [
+    {"항목": "전체 활동 유저", "유저수": len(active_users)},
+    {"항목": "초기·후기 양쪽에 등장", "유저수": len(early_users & late_users)},
+    {"항목": "초기 구간에만 등장", "유저수": len(early_users - late_users)},
+    {"항목": "후기 구간에만 등장", "유저수": len(late_users - early_users)},
+]
+for row in split_rows:
+    row["비율_pct"] = round(100 * row["유저수"] / len(active_users), 1)
+split_composition_df = pd.DataFrame(split_rows)
+
+# 그룹별 잔존율 — 처치가 잔존 자체를 움직였는지 (=(나) 방식이 위험한 이유)
+last_week = starts_all.groupby(["user_id", "group"]).elapsed_week.max().reset_index()
+retention_rows = []
+for g in ("A", "B"):
+    d = last_week[last_week.group == g]
+    short, long_ = int((d.elapsed_week <= EARLY_MAX_WEEK).sum()), int((d.elapsed_week > EARLY_MAX_WEEK).sum())
+    retention_rows.append({
+        "group": g, "단기_이탈_유저수": short, "장기_잔존_유저수": long_,
+        "장기_잔존율_pct": round(100 * long_ / (short + long_), 2),
+    })
+retention_df = pd.DataFrame(retention_rows)
+
+print("=" * 70)
+print("절단 구성 진단: 초기/후기는 '사람'이 아니라 '세션'을 나눈 것")
+print("=" * 70)
+print(split_composition_df.to_string(index=False))
+print()
+print("그룹별 장기 잔존율 (처치 이후 결과이므로 이 기준으로 재분류하면 안 됨)")
+print(retention_df.to_string(index=False))
+print()
 print("=" * 70)
 print("가설별 코호트: 격자 밀도 진단 (A그룹, 가입주 x 경과주)")
 print("=" * 70)
@@ -255,6 +293,8 @@ early_late_df.to_csv("../data/generated_v2/cohort_hypothesis_early_late.csv", in
 elapsed_df.to_csv("../data/generated_v2/cohort_hypothesis_by_elapsed_week.csv", index=False, encoding="utf-8-sig")
 signup_df.to_csv("../data/generated_v2/cohort_hypothesis_by_signup_week.csv", index=False, encoding="utf-8-sig")
 survivor_df.to_csv("../data/generated_v2/cohort_survivorship_check.csv", index=False, encoding="utf-8-sig")
+split_composition_df.to_csv("../data/generated_v2/cohort_split_composition.csv", index=False, encoding="utf-8-sig")
+retention_df.to_csv("../data/generated_v2/cohort_retention_by_group.csv", index=False, encoding="utf-8-sig")
 
 print()
 print("가설별 코호트 분석 저장 완료 (cohort_hypothesis_*.csv, cohort_survivorship_check.csv)")
