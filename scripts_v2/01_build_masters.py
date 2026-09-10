@@ -72,6 +72,26 @@ def _price_params(cat_code):
     return math.sqrt(lo * hi), sigma, lo, hi
 
 
+# ---------------------------------------------------------------------------
+# 카테고리별 상품 평균 평점
+# ---------------------------------------------------------------------------
+# Kaggle "Hierarchical text classification"의 pet supplies 리뷰 4,862건 실측.
+# 중심값은 리뷰 단위 카테고리 평균(표본이 충분), 산포는 리뷰 3건 이상인 상품
+# 354개의 "상품 평균 평점" 표준편차(0.857)를 씁니다 — 카테고리별 산포를 쓰지 않는
+# 이유는 FOOD가 8개 상품뿐이라 신뢰할 수 없기 때문입니다.
+# [1.0, 5.0]으로 클리핑하면 10~13%가 만점에 몰리는데, 실측 분포(p90 = 5.0)와 일치합니다.
+# 근거: data/reference/derived/amazon_pet_rating_by_category.csv
+RATING_MEAN = {"FOOD": 4.125, "TREAT": 4.409, "SUPPLEMENT": 4.192, "GOODS": 4.002}
+RATING_SD = 0.857
+RATING_RNG = np.random.default_rng(20260911)
+
+
+def sample_rating(cat_code):
+    """카테고리별 상품 평균 평점 1건 (소수 첫째 자리, 1.0~5.0)."""
+    v = RATING_RNG.normal(RATING_MEAN[cat_code], RATING_SD)
+    return round(min(max(v, 1.0), 5.0), 1)
+
+
 def sample_price(cat_code):
     """카테고리 밴드에 맞춘 로그정규 가격 1건."""
     median, sigma, lo, hi = _price_params(cat_code)
@@ -232,6 +252,7 @@ def build_products():
                         "product_name": f"{SUBCAT_KOR[subcat_code]} 상품 {i+1}",
                         "species": pick_species_users(species),
                         "function_code": "GENERAL", "price_krw": _draw_price("GOODS"),
+                        "rating": sample_rating("GOODS"),
                     })
                     continue
 
@@ -258,6 +279,7 @@ def build_products():
                     "species": pick_species_users(species),
                     "function_code": func,
                     "price_krw": price,
+                    "rating": sample_rating(cat_code),
                 })
 
                 # --- 원재료 구성 (FOOD/TREAT만; SUPPLEMENT는 활성성분 위주라 생략) ---
