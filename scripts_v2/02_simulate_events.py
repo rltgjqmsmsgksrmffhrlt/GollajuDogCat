@@ -236,8 +236,17 @@ for _, u in users_df.iterrows():
         add_event(user_id, group, session_id, "view_item", view_ts, funnel_step="상품탐색",
                    product_id=product_id, category_id=cat, entry_source=entry_source,
                    source=("recommendation" if entry_source == "recommendation" else None))
+        # 두 필드는 서로 다른 개념입니다 (v1.6에서 분리 — 그 전에는 하나로 뭉쳐 있었습니다).
+        #  - match_score_shown: 계획서 V1의 정의 그대로 "적합도 점수·근거 노출 여부".
+        #    프로토타입에서 점수는 상품 카드·PDP에 붙어 있고 조건이 진입 경로가 아니라
+        #    반려동물 프로필 유무이므로, 기능을 제공받은 A그룹은 전 경로에서 노출됩니다.
+        #  - personalized_curation: 추천 화면의 큐레이션(알레르겐 배제 + 건강기능 매칭)을
+        #    받았는가. 검색·GNB에는 이 필터가 없으므로 A그룹 안에서도 갈립니다.
+        # LIFT는 후자(personalized)에만 걸립니다 — 전자의 순효과는 미측정이라
+        # 0으로 가정하기 때문입니다(리포트 2.1절 박스 참고).
         add_event(user_id, group, session_id, "match_score_shown", view_ts + timedelta(seconds=1),
-                   product_id=product_id, match_score_shown=personalized, care_need_matched=care_matched)
+                   product_id=product_id, match_score_shown=(group == "A"),
+                   personalized_curation=personalized, care_need_matched=care_matched)
 
         dwell_sec = max(3, RNG.exponential(p["pdp_dwell_mean_sec"]))
         view_end_ts = view_ts + timedelta(seconds=dwell_sec)
