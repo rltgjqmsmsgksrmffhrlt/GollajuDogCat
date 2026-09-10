@@ -133,7 +133,8 @@ v2는 사내에서 정리한 반려동물 상품 분류 체계 참조표(카테�
   `species`(값은 `dog`/`cat`/`dog/cat` 세 가지 — "모든 종에 적용 가능"은 `"both"`가
   아니라 `"dog/cat"`으로 저장됩니다. 이 표기 차이 때문에 실제로 발생했던 버그는
   아래 "v0.3 파이프라인 버그 수정" 절 참고), `function_code`(GENERAL 포함 17종 건강기능),
-  `price_krw`, `allergen_groups`(해당 상품이 포함한 알레르겐 그룹, 콤마 구분)
+  `price_krw`(v1.4부터 **로그정규분포** — Kaggle Petflation 실측 기반, 아래 참고),
+  `allergen_groups`(해당 상품이 포함한 알레르겐 그룹, 콤마 구분)
 - **products_ingredients.csv** (long format): 상품별 원재료 코드·알레르겐 그룹.
   독성 성분(마늘/양파/자일리톨/포도 등)은 실제 상품에 쓰이지 않으므로 카탈로그
   생성에서 제외했고, 유저 알레르기 배제 로직에서만 참조 가능한 원재료만 사용했습니다.
@@ -152,6 +153,24 @@ v2는 사내에서 정리한 반려동물 상품 분류 체계 참조표(카테�
 진입 세션에서만** 유저 반려동물의 알레르겐을 포함한 상품을 배제하고, 관심 건강기능이
 있으면 해당 기능 상품을 우선 노출합니다. 그 외 경로(검색/GNB, 또는 B그룹)는 무작위
 상품을 노출해 "개인화 미노출" 상태를 재현합니다.
+
+## 상품 가격 분포 (v1.4: 균등 → 로그정규)
+
+v1.3까지 가격은 `RNG.integers(a, b)` 균등분포였습니다. Kaggle
+[119K Prices: Petflation 2026](https://www.kaggle.com/datasets/costinflation/119k-prices-petflation-2026)
+(119,316건 실측)과 대조해보니 실제 가격 분포는 **오른쪽 꼬리가 훨씬 깁니다** —
+실측 p90/p50이 2.2~2.5인데 균등분포는 1.3~1.7에 그칩니다. 즉 균등분포는 저가 구간
+쏠림을 반영하지 못해 평균 단가를 실제보다 높게 잡고 있었습니다.
+
+v1.4는 카테고리별 로그정규분포로 교체했습니다. 다만 미국 실측 sigma를 그대로 쓰면
+한국 시장 기준가 상한을 넘어(FOOD p90이 77,700원), sigma를 낮춰 밴드에 맞췄습니다.
+파라미터와 근거는 [`data/reference/derived/README.md`](../reference/derived/README.md),
+구현은 `scripts_v2/01_build_masters.py`의 `PRICE_BAND`·`sample_price()` 참고.
+
+**A/B 판정은 하나도 바뀌지 않았습니다.** 가격 전용 난수 스트림(`PRICE_RNG`)을 분리해
+메인 스트림 위치를 보존했기 때문에 `users_master`·`events_log`·`orders`·`pet_reactions`가
+바이트 단위로 동일합니다(md5 검증). 바뀐 건 `products_master.csv`의 `price_krw`와,
+거기서 파생되는 매출 환산(AOV 27,986원 → 23,590원)뿐입니다.
 
 ## funnel_step / trigger_type 컬럼
 

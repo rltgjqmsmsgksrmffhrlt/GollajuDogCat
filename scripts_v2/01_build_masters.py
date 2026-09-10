@@ -23,11 +23,59 @@ v1(scripts/01_build_masters.py) 대비 변경점:
   적혀 있어 날짜 범위와 "90일" 라벨이 서로 맞지 않습니다. v1과의 비교 가능성을
   위해 v1과 동일하게 90일 전체 기간을 사용했습니다.)
 """
+import math
+
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 
 RNG = np.random.default_rng(42)
+
+# 가격 전용 난수 스트림. 메인 RNG와 분리해야 가격 분포를 바꿔도 유저·이벤트 생성
+# 난수가 밀리지 않습니다(아래 build_products()의 주석 참고).
+PRICE_RNG = np.random.default_rng(20260910)
+
+# ---------------------------------------------------------------------------
+# 카테고리별 가격 분포 (로그정규)
+# ---------------------------------------------------------------------------
+# v1.3까지는 RNG.integers(a, b) 균등분포였으나, Kaggle "119K Prices: Petflation 2026"
+# 실측과 대조해보니 실제 가격 분포는 오른쪽 꼬리가 훨씬 깁니다
+# (실측 p90/p50 = 2.2~2.5 vs 균등분포 1.3~1.7). 근거와 한계는
+# data/reference/derived/README.md 참고.
+#
+# 파라미터 산출 규칙:
+#   중앙값 m     = sqrt(밴드하한 x 밴드상한)  — 기하평균
+#   sigma       = min(밴드에서 유도한 값, 실측 sigma)
+#                 밴드 유도값은 [p5, p95]가 밴드 양끝에 오도록 잡은 값이고,
+#                 실측을 상한으로 두어 "실제보다 더 치우치지는 않게" 합니다.
+#   생성값은 밴드 [하한, 상한]으로 클리핑합니다(각 꼬리 2~5%).
+#
+# 밴드는 사업팀이 제시한 한국 시장 기준가입니다(사료 1~6만 / 간식 5천~2만 /
+# 영양제 2~4만). 미국 기준인 Petflation의 sigma를 그대로 쓰면 이 상한을 넘기 때문에
+# (FOOD p90이 77,700원까지 올라감) "미국이 한국보다 프리미엄 폭이 넓다"고 보고
+# sigma를 낮춰 밴드에 맞추는 쪽을 택했습니다.
+PRICE_BAND = {
+    "FOOD": (10000, 60000),
+    "TREAT": (5000, 20000),
+    "SUPPLEMENT": (20000, 40000),
+    "GOODS": (5000, 60000),
+}
+# Petflation 실측 sigma. SUPPLEMENT는 대응 카테고리가 없어 밴드 유도값을 그대로 씁니다.
+PRICE_SIGMA_OBSERVED = {"FOOD": 0.623, "TREAT": 0.709, "GOODS": 0.619}
+_Z95 = 1.6448536269514722  # norm.ppf(0.95) — scipy 의존을 피하려고 상수로 둡니다
+
+
+def _price_params(cat_code):
+    lo, hi = PRICE_BAND[cat_code]
+    sigma_band = math.log(hi / lo) / (2 * _Z95)
+    sigma = min(sigma_band, PRICE_SIGMA_OBSERVED.get(cat_code, sigma_band))
+    return math.sqrt(lo * hi), sigma, lo, hi
+
+
+def sample_price(cat_code):
+    """카테고리 밴드에 맞춘 로그정규 가격 1건."""
+    median, sigma, lo, hi = _price_params(cat_code)
+    return int(min(max(PRICE_RNG.lognormal(math.log(median), sigma), lo), hi))
 
 START_DATE = datetime(2026, 9, 8)
 END_DATE = datetime(2026, 12, 6)  # 90일
@@ -152,6 +200,21 @@ def pick_species_users(subcat_species):
     return subcat_species
 
 
+
+def _draw_price(cat_code):
+    """가격 1건을 뽑되, 메인 RNG 스트림의 위치는 그대로 유지한다.
+
+    아래 RNG.integers() 호출은 **값을 쓰지 않습니다.** v1.3까지 이 자리에서 가격을
+    뽑았기 때문에, 호출을 없애면 이후의 모든 난수가 한 칸씩 밀려 유저·이벤트·주문이
+    전부 재배치되고 A/B 판정 결과까지 달라집니다(v0.3에서 실제로 겪은 문제 —
+    data/generated_v2/README.md "v0.3 파이프라인 버그 수정" 절 참고).
+    호출만 남겨 스트림을 고정하고, 실제 가격은 PRICE_RNG에서 뽑습니다.
+    그 덕분에 이 변경으로 바뀌는 산출물은 products_master.csv의 price_krw 하나뿐입니다.
+    """
+    RNG.integers(*PRICE_BAND[cat_code])  # 스트림 위치 고정용 (값 미사용)
+    return sample_price(cat_code)
+
+
 def build_products():
     prod_rows, ing_rows, nut_rows = [], [], []
     pid = 1
@@ -168,7 +231,7 @@ def build_products():
                         "subcategory_code": subcat_code,
                         "product_name": f"{SUBCAT_KOR[subcat_code]} 상품 {i+1}",
                         "species": pick_species_users(species),
-                        "function_code": "GENERAL", "price_krw": int(RNG.integers(5000, 60000)),
+                        "function_code": "GENERAL", "price_krw": _draw_price("GOODS"),
                     })
                     continue
 
@@ -185,17 +248,8 @@ def build_products():
 
                 is_hypo = (func == "HYPOALLERGENIC")
 
-                # 카테고리별 실제 시장 가격대(사업팀 제공 기준가)에 맞춘 가격 샘플링.
-                # FOOD는 소용량(1~2만)~대용량/기능성(4~6만)을 한 범위로 블렌딩,
-                # TREAT는 일반(5천~1만 중심)~프리미엄(1~2만)을 블렌딩, SUPPLEMENT는
-                # "2~4만원대 중심" 그대로. RNG.integers() 호출 1회는 기존과 동일하게
-                # 유지해(호출 횟수 불변) 이후 유저/펫 속성 생성 스트림에 영향이 없도록 함.
-                if cat_code == "SUPPLEMENT":
-                    price = int(RNG.integers(20000, 40000))
-                elif cat_code == "TREAT":
-                    price = int(RNG.integers(5000, 20000))
-                else:  # FOOD
-                    price = int(RNG.integers(10000, 60000))
+                # 가격 샘플링 — 파라미터와 근거는 상단 PRICE_BAND 주석 참고.
+                price = _draw_price(cat_code)
 
                 prod_rows.append({
                     "product_id": product_id, "category_code": cat_code,
