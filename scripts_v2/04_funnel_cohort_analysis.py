@@ -125,3 +125,136 @@ cohort_B_cnt.to_csv("../data/generated_v2/cohort_B_size.csv", encoding="utf-8-si
 
 print()
 print("Funnel & Cohort analysis saved.")
+
+# ===========================================================================
+# 가설별 코호트 분석 (가입 후 경과 주차 기준)
+# ---------------------------------------------------------------------------
+# 위의 재구매 코호트가 "가입주 x 경과주" 격자라면, 여기서는 같은 격자를
+# 가설별 주 지표(분자/분모)에 적용한다. 격자 전체는 세 가설 모두 셀당 표본이
+# 판정 불가 수준이므로(density 표 참고), 실제 판정에는 초기/후기 2분할만 쓴다.
+# ===========================================================================
+PAB_RNG = np.random.default_rng(20260909)
+
+def p_a_better(xa, na, xb, nb, draws=200_000):
+    """무정보 사전분포 Beta(1,1)에서 P(A그룹 비율 > B그룹 비율), % 단위."""
+    if not na or not nb:
+        return None
+    sa = PAB_RNG.beta(1 + xa, 1 + na - xa, draws)
+    sb = PAB_RNG.beta(1 + xb, 1 + nb - xb, draws)
+    return round(100 * float((sa > sb).mean()), 1)
+
+ev = events.merge(users[["user_id", "signup_week", "signup_date"]], on="user_id", how="left")
+ev["elapsed_week"] = ((ev.event_timestamp - ev.signup_date).dt.total_seconds() // (7 * 86400)).astype(int)
+ev = ev[ev.elapsed_week >= 0]
+
+# 가설2 분모: 추천 클릭(select_item)이 발생한 세션
+rec_sessions = set(ev.loc[ev.event_type == "select_item", "session_id"])
+in_rec_session = ev.session_id.isin(rec_sessions)
+
+HYPOTHESES = {
+    "가설1 구매전환율": (ev.event_type == "complete_purchase",
+                        ev.event_type == "session_start"),
+    "가설2 추천클릭세션 CVR": ((ev.event_type == "complete_purchase") & in_rec_session,
+                              (ev.event_type == "session_start") & in_rec_session),
+    "가설3 반응입력완료율": (ev.event_type == "reaction_complete",
+                            ev.event_type == "reaction_require_alarm"),
+}
+
+def cohort_slice(num_mask, den_mask, key):
+    """key(가입주 또는 경과주) 구간별로 A/B 분자·분모와 P(A>B)를 계산."""
+    rows = []
+    for k in sorted(ev[key].unique()):
+        seg = ev[key] == k
+        cell = {}
+        for g in ("A", "B"):
+            m = seg & (ev.group == g)
+            cell[g] = (int((num_mask & m).sum()), int((den_mask & m).sum()))
+        (xa, na), (xb, nb) = cell["A"], cell["B"]
+        if not na and not nb:
+            continue  # 관측이 없는 구간(관측창 밖)은 행 자체를 만들지 않는다
+        rows.append({
+            key: k,
+            "A_num": xa, "A_den": na, "A_rate": round(100 * xa / na, 2) if na else None,
+            "B_num": xb, "B_den": nb, "B_rate": round(100 * xb / nb, 2) if nb else None,
+            "P_A_better": p_a_better(xa, na, xb, nb),
+        })
+    return pd.DataFrame(rows)
+
+# --- (1) 격자 밀도 진단: 왜 "가입주 x 경과주" 전체 격자를 판정에 쓰지 않는가
+density_rows = []
+for name, (num_mask, den_mask) in HYPOTHESES.items():
+    a = ev.group == "A"
+    den_cells = ev[den_mask & a].groupby(["signup_week", "elapsed_week"]).size()
+    num_cells = ev[num_mask & a].groupby(["signup_week", "elapsed_week"]).size()
+    density_rows.append({
+        "가설": name,
+        "채워진_셀수": len(den_cells),
+        "A_분모_총계": int(den_cells.sum()),
+        "A_분자_총계": int(num_cells.sum()),
+        "셀당_분모_중앙값": int(den_cells.median()),
+        "셀당_분자_중앙값": float(num_cells.median()) if len(num_cells) else 0.0,
+    })
+density_df = pd.DataFrame(density_rows)
+
+# --- (2) 초기(0~3주) vs 후기(4주+) 2분할 — 판정에 사용하는 절단
+EARLY_MAX_WEEK = 3
+EARLY_LABEL = f"초기 0~{EARLY_MAX_WEEK}주"
+LATE_LABEL = f"후기 {EARLY_MAX_WEEK + 1}주+"
+early_late_rows = []
+for name, (num_mask, den_mask) in HYPOTHESES.items():
+    for label, seg in ((EARLY_LABEL, ev.elapsed_week <= EARLY_MAX_WEEK),
+                       (LATE_LABEL, ev.elapsed_week > EARLY_MAX_WEEK)):
+        cell = {}
+        for g in ("A", "B"):
+            m = seg & (ev.group == g)
+            cell[g] = (int((num_mask & m).sum()), int((den_mask & m).sum()))
+        (xa, na), (xb, nb) = cell["A"], cell["B"]
+        early_late_rows.append({
+            "가설": name, "구간": label,
+            "A_num": xa, "A_den": na, "A_rate": round(100 * xa / na, 2),
+            "B_num": xb, "B_den": nb, "B_rate": round(100 * xb / nb, 2),
+            "P_A_better": p_a_better(xa, na, xb, nb),
+        })
+early_late_df = pd.DataFrame(early_late_rows)
+
+# --- (3) 경과 주차별 / 가입 코호트별 (방향 참고용)
+elapsed_parts, signup_parts = [], []
+for name, (num_mask, den_mask) in HYPOTHESES.items():
+    for key, parts in (("elapsed_week", elapsed_parts), ("signup_week", signup_parts)):
+        part = cohort_slice(num_mask, den_mask, key)
+        part.insert(0, "가설", name)
+        parts.append(part)
+elapsed_df = pd.concat(elapsed_parts, ignore_index=True)
+signup_df = pd.concat(signup_parts, ignore_index=True)
+
+# --- (4) 생존 편향 진단: 경과 주차가 늘수록 남아있는 유저가 줄어든다
+starts = ev[ev.event_type == "session_start"]
+survivor_df = pd.DataFrame({
+    "활동_유저수": starts.groupby("elapsed_week").user_id.nunique(),
+    "세션수": starts.groupby("elapsed_week").size(),
+}).reset_index()
+survivor_df["유저당_세션수"] = (survivor_df.세션수 / survivor_df.활동_유저수).round(2)
+
+print("=" * 70)
+print("가설별 코호트: 격자 밀도 진단 (A그룹, 가입주 x 경과주)")
+print("=" * 70)
+print(density_df.to_string(index=False))
+print()
+print("=" * 70)
+print(f"가설별 코호트: {EARLY_LABEL} vs {LATE_LABEL} — 판정용 절단")
+print("=" * 70)
+print(early_late_df.to_string(index=False))
+print()
+print("=" * 70)
+print("생존 편향 진단: 경과 주차별 활동 유저수")
+print("=" * 70)
+print(survivor_df.to_string(index=False))
+
+density_df.to_csv("../data/generated_v2/cohort_hypothesis_grid_density.csv", index=False, encoding="utf-8-sig")
+early_late_df.to_csv("../data/generated_v2/cohort_hypothesis_early_late.csv", index=False, encoding="utf-8-sig")
+elapsed_df.to_csv("../data/generated_v2/cohort_hypothesis_by_elapsed_week.csv", index=False, encoding="utf-8-sig")
+signup_df.to_csv("../data/generated_v2/cohort_hypothesis_by_signup_week.csv", index=False, encoding="utf-8-sig")
+survivor_df.to_csv("../data/generated_v2/cohort_survivorship_check.csv", index=False, encoding="utf-8-sig")
+
+print()
+print("가설별 코호트 분석 저장 완료 (cohort_hypothesis_*.csv, cohort_survivorship_check.csv)")

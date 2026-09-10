@@ -340,6 +340,11 @@ v0.3에서 이표본 비율 z-검정을 해보니 5개 핵심 지표(가설1 구
 | `pet_reactions.csv` | 반려동물 반응 입력 기록 |
 | `funnel1_purchase_journey.csv` / `funnel2_reaction_journey.csv` | 퍼널 분석 결과 |
 | `cohort_A/B_*.csv` | 코호트 분석 결과 |
+| `cohort_hypothesis_early_late.csv` | 가설별 초기(0~3주)/후기(4주+) 코호트 판정 (**판정용**) |
+| `cohort_hypothesis_by_elapsed_week.csv` | 가설별 경과 주차 13구간 (방향 참고) |
+| `cohort_hypothesis_by_signup_week.csv` | 가설별 가입 코호트 13구간 (품질 점검) |
+| `cohort_hypothesis_grid_density.csv` | 가입주×경과주 격자 셀당 표본량 진단 |
+| `cohort_survivorship_check.csv` | 경과 주차별 활동 유저수 (생존 편향 진단) |
 | `AB테스트_가상데이터_분석요약_v2.xlsx` | 종합 리포트 |
 
 ## 재현 방법
