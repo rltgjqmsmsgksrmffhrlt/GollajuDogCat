@@ -30,6 +30,18 @@ ISSUE_TXT = {
     "ALLERGY": ["알레르기 반응이 의심돼서 중단했어요", "먹고 나서 귀와 발을 계속 핥았어요", "기존에 없던 가려움이 생겼어요"],
     "FEEDING_CONVENIENCE": ["포장이 불편해서 급여하기 어려워요", "소분이 어렵고 흘리기 쉬워요", "알갱이 크기가 맞지 않아 먹기 불편해해요"],
 }
+# 3점용 순한 표현 (풀 크기는 위와 같게 유지해 난수 순서를 보존)
+PAL_MILD = {
+    "FOOD": ["처음보다 먹는 양이 조금 줄었어요", "잘 먹을 때도 있고 남길 때도 있어요", "기호성은 그저 그런 편이에요"],
+    "TREAT": ["간식 반응이 그리 크지 않았어요", "좋아하는 날도 있고 시큰둥한 날도 있어요", "기대만큼 열광하지는 않아요"],
+    "SUPPLEMENT": ["먹이는 데 약간 손이 가요", "간식에 섞으면 먹지만 그냥은 잘 안 먹어요", "급여 반응이 들쭉날쭉해요"],
+}
+ISSUE_MILD = {
+    "DIGESTION": ["변 상태가 가끔 무르긴 했어요", "배변 변화는 뚜렷하지 않았어요", "처음 며칠은 배변이 살짝 달라졌어요"],
+    "SKIN_COAT": ["피부나 모질 변화는 아직 잘 모르겠어요", "눈에 띄는 모질 개선은 못 느꼈어요", "긁는 횟수는 비슷했어요"],
+    "ALLERGY": ["알레르기 반응은 없었지만 큰 변화도 없었어요", "특별한 이상은 없었는데 만족스럽진 않아요", "가려움은 비슷한 수준이에요"],
+    "FEEDING_CONVENIENCE": ["포장이 조금 불편했어요", "소분이 약간 번거로워요", "알갱이 크기가 조금 아쉬워요"],
+}
 OPEN = {1: ["{n}에게는 맞지 않았어요.", "{n}이 먹고 나서 문제가 있었어요.", "{n}에게 권하고 싶지 않아요."],
         2: ["{n}에게는 아쉬운 제품이었어요.", "{n} 반응이 기대보다 별로였어요."],
         3: ["{n} 반응은 보통이에요.", "{n}에게는 그냥 무난한 정도였어요."]}
@@ -37,7 +49,10 @@ CLOSE = {1: "재구매 의사 없습니다.", 2: "재구매는 고민 중이에�
 
 
 def make_text(name, star, issue, cat):
-    pool = PAL[cat] if issue == "PALATABILITY" else ISSUE_TXT[issue]
+    if star == 3:
+        pool = PAL_MILD[cat] if issue == "PALATABILITY" else ISSUE_MILD[issue]
+    else:
+        pool = PAL[cat] if issue == "PALATABILITY" else ISSUE_TXT[issue]
     o = OPEN[star][RNG.integers(len(OPEN[star]))].format(n=name)
     b = pool[RNG.integers(len(pool))] + "."
     if star == 3:
