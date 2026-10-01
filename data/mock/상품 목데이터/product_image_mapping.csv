@@ -1,0 +1,37 @@
+﻿product_id,sku,product_name,thumbnail_file,detail_file,source_board,source_tile
+1,HKF-001,한끼 소프트 치킨 퍼피 1kg,HKF-001_thumb.jpg,HKF-001_detail-01.jpg,board1,1
+2,HKF-002,한끼 연어 밸런스 어덜트 1.5kg,HKF-002_thumb.jpg,HKF-002_detail-01.jpg,board1,2
+3,HKF-003,한끼 오리 라이트 체중관리 1.2kg,HKF-003_thumb.jpg,HKF-003_detail-01.jpg,board1,3
+4,HKF-004,한끼 양고기 시니어 케어 1.5kg,HKF-004_thumb.jpg,HKF-004_detail-01.jpg,board1,4
+5,HNT-001,한입 닭가슴살 큐브 80g,HNT-001_thumb.jpg,HNT-001_detail-01.jpg,board1,9
+6,HNT-002,한입 연어 동결건조 트릿 60g,HNT-002_thumb.jpg,HNT-002_detail-01.jpg,board1,10
+7,HNT-003,한입 오리 미니 육포 100g,HNT-003_thumb.jpg,HNT-003_detail-01.jpg,board1,11
+8,HNT-004,한입 고구마 치킨 롤 90g,HNT-004_thumb.jpg,HNT-004_detail-01.jpg,board1,12
+9,HPS-001,한포 데일리 유산균 30포,HPS-001_thumb.jpg,HPS-001_detail-01.jpg,board1,5
+10,HPS-002,한포 조인트 케어 60정,HPS-002_thumb.jpg,HPS-002_detail-01.jpg,board1,6
+11,HPS-003,한포 피부모질 오메가 30캡슐,HPS-003_thumb.jpg,HPS-003_detail-01.jpg,board1,7
+12,HPS-004,한포 눈물 케어 데일리 30포,HPS-004_thumb.jpg,HPS-004_detail-01.jpg,board1,8
+13,ONF-001,온밥 오리지널 독 어덜트 2kg,ONF-001_thumb.jpg,ONF-001_detail-01.jpg,board2,1
+14,ONF-002,온밥 램 라이트 체중관리 2.5kg,ONF-002_thumb.jpg,ONF-002_detail-01.jpg,board2,2
+15,ONF-003,온밥 연어 조인트 케어 2kg,ONF-003_thumb.jpg,ONF-003_detail-01.jpg,board2,3
+16,ONF-004,온밥 치킨 액티브 밸런스 3kg,ONF-004_thumb.jpg,ONF-004_detail-01.jpg,board2,4
+17,OST-001,온스낵 무첨가 오리가슴살 200g,OST-001_thumb.jpg,OST-001_detail-01.jpg,board2,13
+18,OST-002,온스낵 연어 덴탈 스틱 210g,OST-002_thumb.jpg,OST-002_detail-01.jpg,board2,14
+19,OST-003,온스낵 소고기 트레이닝 큐브 180g,OST-003_thumb.jpg,OST-003_detail-01.jpg,board2,15
+20,OST-004,온스낵 황태 바삭 트릿 150g,OST-004_thumb.jpg,OST-004_detail-01.jpg,board2,16
+21,OCS-001,온케어 강아지 관절 영양제 60정,OCS-001_thumb.jpg,OCS-001_detail-01.jpg,board2,17
+22,OCS-002,온케어 장 건강 프로바이오틱스 60정,OCS-002_thumb.jpg,OCS-002_detail-01.jpg,board2,18
+23,OCS-003,온케어 피부모질 오메가 90캡슐,OCS-003_thumb.jpg,OCS-003_detail-01.jpg,board2,19
+24,OCS-004,온케어 데일리 멀티비타민 90정,OCS-004_thumb.jpg,OCS-004_detail-01.jpg,board2,20
+25,DMF-001,담았냥 캣 유리너리 케어 2kg,DMF-001_thumb.jpg,DMF-001_detail-01.jpg,board2,5
+26,DMF-002,담았냥 인도어 헤어볼 케어 1.5kg,DMF-002_thumb.jpg,DMF-002_detail-01.jpg,board2,6
+27,DMF-003,담았냥 연어 어덜트 밸런스 2kg,DMF-003_thumb.jpg,DMF-003_detail-01.jpg,board2,7
+28,DMF-004,담았냥 치킨 키튼 밸런스 1.5kg,DMF-004_thumb.jpg,DMF-004_detail-01.jpg,board2,8
+29,NST-001,냥식 동결건조 치킨 트릿 100g,NST-001_thumb.jpg,NST-001_detail-01.jpg,board1,15
+30,NST-002,냥식 참치 퓨레 스틱 56g,NST-002_thumb.jpg,NST-002_detail-01.jpg,board1,16
+31,NST-003,냥식 연어 큐브 트릿 70g,NST-003_thumb.jpg,NST-003_detail-01.jpg,board1,17
+32,NST-004,냥식 닭안심 수분 스틱 60g,NST-004_thumb.jpg,NST-004_detail-01.jpg,board1,18
+33,DNS-001,다정냥 유리너리 케어 30포,DNS-001_thumb.jpg,DNS-001_detail-01.jpg,board2,21
+34,DNS-002,다정냥 연어 피부관리 50캡슐,DNS-002_thumb.jpg,DNS-002_detail-01.jpg,board2,22
+35,DNS-003,다정냥 헤어볼 케어 30포,DNS-003_thumb.jpg,DNS-003_detail-01.jpg,board2,23
+36,DNS-004,다정냥 장 건강 유산균 30포,DNS-004_thumb.jpg,DNS-004_detail-01.jpg,board2,24
